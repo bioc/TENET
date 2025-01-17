@@ -216,7 +216,11 @@ If this rowRanges dataset is not included in the "expression"
 SummarizedExperiment object, TENET can still be used, but the user will have to
 specify a `geneAnnotationDataset` in subsequent functions from which to pull
 information for the genes included in the "expression" SummarizedExperiment
-object. This dataset should contain gene and transcript information, and must
+object. As an exception, the rowRanges dataset is required if the user is using
+the `easyTENET` function to run the step 1 through step 6 functions with
+default arguments.
+
+The rowRanges dataset should contain gene and transcript information, and must
 be supplied as a GRanges object (such as one imported by `rtracklayer::import`)
 or a path to a GFF3 or GTF file. **Note:** TENET has only been tested with
 GENCODE and Ensembl gene annotation datasets. If you are using another dataset,
@@ -298,13 +302,15 @@ assays(
 Like the "expression" object, the "methylation" SummarizedExperiment object can
 include a GRanges object in its rowRanges with information on the genomic
 coordinates for each RE DNA methylation site included in the assay of the
-"methylation" SummarizedExperiment. This GRanges object should include the
-methylation site IDs as names, and these should match with the IDs used as the
-rownames of the methylation assay object. Otherwise, this GRanges object only
-needs to include the chromosome and 1-indexed coordinates of each RE DNA
-methylation site. In contrast with the "expression" SummarizedExperiment
-object, strand information and names are not used. Additional columns can be
-included, but are not used by TENET.
+"methylation" SummarizedExperiment. As previously mentioned, this rowRanges
+dataset is required if the user is using the `easyTENET` function.
+
+This GRanges object should include the methylation site IDs as names, and these
+should match with the IDs used as the rownames of the methylation assay object.
+Otherwise, this GRanges object only needs to include the chromosome and
+1-indexed coordinates of each RE DNA methylation site. In contrast with the
+"expression" SummarizedExperiment object, strand information and names are not
+used. Additional columns can be included, but are not used by TENET.
 
 If this rowRanges dataset is not included in the "methylation"
 SummarizedExperiment object, TENET can still be used, but the user will have to
@@ -451,6 +457,7 @@ table(sampleMap(exampleTENETMultiAssayExperiment)$sampleType)
 
 # Overview of main TENET functions
 
+* `easyTENET`: Run the step 1 through step 6 functions with default arguments
 * `step1MakeExternalDatasets`: Create a GRanges object representing putative regulatory element regions, based on the data sources selected for inclusion, to be used in later TENET steps
 * `step2GetDifferentiallyMethylatedSites`: Identify differentially methylated RE DNA methylation sites
 * `step3GetAnalysisZScores`: Calculate Z-scores comparing the mean expression of each gene in the case samples that are hyper- or hypomethylated for each RE DNA methylation site chosen in step 2
@@ -459,6 +466,85 @@ table(sampleMap(exampleTENETMultiAssayExperiment)$sampleType)
 * `step6DNAMethylationSitesPerGeneTabulation`: Tabulate the total number of RE DNA methylation sites linked to each of the genes
 * `TCGADownloader`: Download TCGA gene expression, DNA methylation, and clinical datasets and compile them into a MultiAssayExperiment object
 * `TENETCacheAllData`: Cache all online datasets required by TENET examples and optional features
+
+## `easyTENET`: Run the step 1 through step 6 functions with default arguments
+
+This function runs the main six TENET functions, `step1MakeExternalDatasets`,
+`step2GetDifferentiallyMethylatedSites`, `step3GetAnalysisZScores`,
+`step4SelectMostSignificantLinksPerDNAMethylationSite`, `step5OptimizeLinks`,
+and `step6DNAMethylationSitesPerGeneTabulation`, in sequence on the specified
+TENETMultiAssayExperiment object. The operation and arguments of this
+function reflect those of its component functions. For additional details on
+them, refer to their respective sections in this vignette.
+
+`easyTENET` includes only the most important arguments to its component functions,
+thus maintaining core TENET functionality while simplifying its use and allowing
+users to run all six key TENET steps with one function call. The majority of its
+arguments are those from `step1MakeExternalDatasets`, which select the types of
+regulatory elements the user wishes to investigate, as well as those from
+`step2GetDifferentiallyMethylatedSites`. If an argument to one of the component
+functions is not specified, it will be set to its default value for that function.
+
+As stated earlier, using `easyTENET` requires the user to include rowRanges
+objects in the input MultiAssayExperiment's "expression" and "methylation"
+SummarizedExperiments containing the locations of transcription start sites
+of genes and DNA methylation sites, respectively.
+
+**Note:** Since this function runs the `step3GetAnalysisZScores` function,
+it may take a while to run. It is highly recommended to use multiple cores if
+possible, especially when using large datasets.
+
+```{r eval = FALSE}
+## This example first creates a dataset of putative enhancer regulatory elements
+## from consensus datasets and breast invasive carcinoma-relevant sources
+## collected in the TENET.AnnotationHub package, then runs the step 2 through
+## step 6 functions analyzing RE DNA methylation sites in potential
+## enhancer elements located over 1500 bp from transcription start sites
+## listed for genes and transcripts in the GENCODE v36 human genome
+## annotations (already contained in the exampleTENETMultiAssayExperiment
+## object loaded earlier), using a minimum case sample count of 5 and one
+## CPU core to perform the analysis.
+exampleObject <- easyTENET(
+    TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+    extHM = NA,
+    extNDR = NA,
+    publicEnhancer = TRUE,
+    publicNDR = TRUE,
+    cancerType = "BRCA",
+    ENCODEdELS = TRUE,
+    minCaseCount = 5
+)
+
+## The exampleObject should have data from the step 2 through step 6 functions,
+## as the dataset created by the step1MakeExternalDatasets function is used by
+## and saved in the output of the step2GetDifferentiallyMethylatedSites function.
+
+## See the types of data that were saved by the step 2 function
+names(metadata(exampleObject)$step2GetDifferentiallyMethylatedSites)
+
+## See the GRanges object created by the step 1 function
+metadata(
+    exampleObject
+)$step2GetDifferentiallyMethylatedSites$regulatoryElementGRanges
+
+## See the types of data that were saved by the step 3 function
+names(metadata(exampleObject)$step3GetAnalysisZScores)
+
+## See the types of data that were saved by the step 4 function
+names(
+    metadata(exampleObject)$step4SelectMostSignificantLinksPerDNAMethylationSite
+)
+
+## See the types of data that were saved by the step 5 function
+names(metadata(exampleObject)$step5OptimizeLinks)
+
+## See the types of data that were saved by the step 6 function
+names(
+    metadata(
+        exampleObject
+    )$step6DNAMethylationSitesPerGeneTabulation
+)
+```
 
 ## `step1MakeExternalDatasets`: Create a GRanges object representing putative regulatory element regions, based on the data sources selected for inclusion, to be used in later TENET steps
 

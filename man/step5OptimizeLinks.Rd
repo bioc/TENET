@@ -60,11 +60,11 @@ metrics performed by this step.
 This function takes the most significant hyper- or hypomethylated G+ RE DNA
 methylation site-gene links selected in step 4, and selects optimized links
 based on the relative expression of the given gene in hyper- or
-hypomethylated case samples compared to control samples, using a Wilcoxon
-test to check that the hyper- or hypomethylated samples for that given RE
-DNA methylation site-gene link also show appropriately higher/lower
-expression of the linked gene in a number of case samples greater than or
-equal to the \code{minCaseCount} number specified in the
+hypomethylated case samples compared to control samples, using an unpaired
+two-sided Wilcoxon rank-sum test to check that the hyper- or hypomethylated
+samples for that given RE DNA methylation site-gene link also show
+appropriately higher/lower expression of the linked gene in a number of case
+samples greater than or equal to the \code{minCaseCount} number specified in the
 \code{step2GetDifferentiallyMethylatedSites} function that have maximum/minimum
 methylation above/below the \code{hyperStringency}/\code{hypoStringency} cutoff values
 selected.

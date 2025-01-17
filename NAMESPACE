@@ -2,6 +2,7 @@
 
 export(TCGADownloader)
 export(TENETCacheAllData)
+export(easyTENET)
 export(step1MakeExternalDatasets)
 export(step2GetDifferentiallyMethylatedSites)
 export(step3GetAnalysisZScores)
