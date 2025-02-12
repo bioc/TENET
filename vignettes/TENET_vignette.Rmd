@@ -75,7 +75,7 @@ necessary. They are also available separately via the
 It is not necessary to install the TENET.AnnotationHub package to use TENET's
 functions.
 
-R 4.4 or a newer version is required.
+R 4.5 or a newer version is required.
 
 On Ubuntu 22.04, installation was successful in a fresh R environment after
 adding the official R Ubuntu repository using the instructions at

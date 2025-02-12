@@ -9,7 +9,7 @@ To use TENET, users will need to install the base package as well as its associa
 
 TENET also uses annotation datasets hosted in the Bioconductor AnnotationHub database. These datasets will be automatically loaded from AnnotationHub when necessary. They are also available separately via the [TENET.AnnotationHub](https://github.com/rhielab/TENET.AnnotationHub) package. It is not necessary to install the TENET.AnnotationHub package to use TENET's functions.
 
-R 4.4 or a newer version is required.
+R 4.5 or a newer version is required.
 
 On Ubuntu 22.04, installation was successful in a fresh R environment after [adding the official R Ubuntu repository](https://cran.r-project.org/bin/linux/ubuntu/) and running:
 
