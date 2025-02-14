@@ -477,13 +477,14 @@ TENETMultiAssayExperiment object. The operation and arguments of this
 function reflect those of its component functions. For additional details on
 them, refer to their respective sections in this vignette.
 
-`easyTENET` includes only the most important arguments to its component functions,
-thus maintaining core TENET functionality while simplifying its use and allowing
-users to run all six key TENET steps with one function call. The majority of its
-arguments are those from `step1MakeExternalDatasets`, which select the types of
-regulatory elements the user wishes to investigate, as well as those from
-`step2GetDifferentiallyMethylatedSites`. If an argument to one of the component
-functions is not specified, it will be set to its default value for that function.
+`easyTENET` includes only the most important arguments to its component
+functions, thus maintaining core TENET functionality while simplifying its use
+and allowing users to run all six key TENET steps with one function call. The
+majority of its arguments are those from `step1MakeExternalDatasets`, which
+select the types of regulatory elements the user wishes to investigate, as well
+as those from `step2GetDifferentiallyMethylatedSites`. If an argument to one of
+the component functions is not specified, it will be set to its default value
+for that function.
 
 As stated earlier, using `easyTENET` requires the user to include rowRanges
 objects in the input MultiAssayExperiment's "expression" and "methylation"
@@ -517,7 +518,8 @@ exampleObject <- easyTENET(
 
 ## The exampleObject should have data from the step 2 through step 6 functions,
 ## as the dataset created by the step1MakeExternalDatasets function is used by
-## and saved in the output of the step2GetDifferentiallyMethylatedSites function.
+## and saved in the output of the step2GetDifferentiallyMethylatedSites
+## function.
 
 ## See the types of data that were saved by the step 2 function
 names(metadata(exampleObject)$step2GetDifferentiallyMethylatedSites)
