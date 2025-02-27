@@ -58,7 +58,7 @@ This vignette provides basic instructions to run the workflow of TENET to
 identify key TFs and linked RE DNA methylation sites. We will cover how to
 install the package, an overview of the necessary input data to use functions
 included in the TENET package, and the use of the TENET step 1-7 functions and
-the `TCGADownloader` utility function.
+the `easyTENET` and `TCGADownloader` utility functions.
 
 # Acquiring and installing TENET and associated packages
 
@@ -699,7 +699,7 @@ applied for all results, not just the significant ones.
 highly recommended to use multiple cores if possible, especially when using
 large datasets.
 
-```{r eval = FALSE}
+```{r}
 ## Identify significant Z-scores and initial RE DNA methylation site-gene links
 ## using the exampleTENETMultiAssayExperiment with results from the
 ## step2GetDifferentiallyMethylatedSites function. For this analysis, we will
