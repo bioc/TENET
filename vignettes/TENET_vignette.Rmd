@@ -705,7 +705,9 @@ large datasets.
 ## step2GetDifferentiallyMethylatedSites function. For this analysis, we will
 ## use the one-sample Z-score function, consider only TFs, rather than all
 ## genes, and save only significant Z-scores, to cut down on computational time
-## and reduce the size of the returned MultiAssayExperiment object.
+## and reduce the size of the returned MultiAssayExperiment object. Two CPU
+## cores will be used if they exist (except on Windows where the
+## parallel::mclapply function is not supported).
 exampleObject <- step3GetAnalysisZScores(
     TENETMultiAssayExperiment = exampleObject,
     pValue = 0.05,
@@ -714,7 +716,10 @@ exampleObject <- step3GetAnalysisZScores(
     hypermethAnalysis = TRUE,
     hypomethAnalysis = TRUE,
     includeControl = FALSE,
-    sparseResults = TRUE
+    sparseResults = TRUE,
+    coreCount = min(
+        parallel::detectCores(), ifelse(.Platform$OS.type != "windows", 2, 1)
+    )
 )
 
 ## See the data that were saved by the step 3 function. They are subdivided into
