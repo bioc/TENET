@@ -1,4 +1,4 @@
-0.99.0
-======
+1.0.0
+=====
 
-* Initial Bioconductor submission
+* Initial Bioconductor release

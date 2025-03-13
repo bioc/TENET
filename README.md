@@ -11,9 +11,9 @@ TENET also uses annotation datasets hosted in the Bioconductor AnnotationHub dat
 
 R 4.5 or a newer version is required.
 
-On Ubuntu 22.04, installation was successful in a fresh R environment after [adding the official R Ubuntu repository](https://cran.r-project.org/bin/linux/ubuntu/) and running:
+On Ubuntu 22.04, successful installation required several additional packages. They can be installed by running the following command in a terminal:
 
-`sudo apt-get install r-base-core r-base-dev libcurl4-openssl-dev libfreetype6-dev libfribidi-dev libfontconfig1-dev libharfbuzz-dev libtiff5-dev libxml2-dev`
+`sudo apt-get install r-base-dev libcurl4-openssl-dev libfreetype6-dev libfribidi-dev libfontconfig1-dev libharfbuzz-dev libtiff5-dev libxml2-dev`
 
 No dependencies other than R are required on macOS or Windows.
 
