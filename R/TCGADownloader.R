@@ -48,6 +48,19 @@
 #' @param rawDataDownloadDirectory Specify the path to the directory where
 #' TCGAbiolinks should download data. Note that this dataset can be very
 #' sizable.
+#' @param GDCDownloadMethod The method to use when downloading data from the
+#' Genomic Data Commons (GDC). Passed as the `method` argument to TCGAbiolinks'
+#' `GDCdownload` function. The available options are "api" and "client"; the
+#' default is "api". The "api" method works on all operating systems, but
+#' it does not retry the download of incomplete or corrupted files, so
+#' `TCGADownloader` must be manually rerun in this case. The "client" method is
+#' more reliable, but it requires Windows, macOS (Apple Silicon only), or Ubuntu
+#' (64-bit x86 only), or manual installation of the GDC Data Transfer Tool
+#' Client (which must be in the command search path).
+#' @param filesPerChunk The number of data files to download at once when using
+#' the "api" download method. Passed as the `files.per.chunk` argument to
+#' TCGAbiolinks' `GDCdownload` function. Lower values may improve download
+#' reliability, but higher values may increase download speed. Defaults to 10.
 #' @param TCGAStudyAbbreviation Input a four-letter code for a TCGA dataset
 #' for which to download data. See
 #' <https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations>
@@ -131,6 +144,8 @@
 #' )
 TCGADownloader <- function(
     rawDataDownloadDirectory,
+    GDCDownloadMethod = "api",
+    filesPerChunk = 10,
     TCGAStudyAbbreviation,
     RNASeqWorkflow,
     RNASeqLog2Normalization = TRUE,
@@ -221,7 +236,9 @@ TCGADownloader <- function(
     ## Download the expression data
     TCGAbiolinks::GDCdownload(
         expressionQuery,
-        directory = rawDataDownloadDirectory
+        directory = rawDataDownloadDirectory,
+        method = GDCDownloadMethod,
+        files.per.chunk = filesPerChunk
     )
 
     ## Assemble the expression SummarizedExperiment object
@@ -243,7 +260,9 @@ TCGADownloader <- function(
     ## Download the methylation data
     TCGAbiolinks::GDCdownload(
         methylationQuery,
-        directory = rawDataDownloadDirectory
+        directory = rawDataDownloadDirectory,
+        method = GDCDownloadMethod,
+        files.per.chunk = filesPerChunk
     )
 
     ## Assemble the methylation SummarizedExperiment object
@@ -265,7 +284,9 @@ TCGADownloader <- function(
     ## Download the BCR Biotab data
     TCGAbiolinks::GDCdownload(
         clinicalQueryBcrBiotab,
-        directory = rawDataDownloadDirectory
+        directory = rawDataDownloadDirectory,
+        method = GDCDownloadMethod,
+        files.per.chunk = filesPerChunk
     )
 
     ## Load the BCR Biotab clinical data into a data frame
@@ -332,7 +353,9 @@ TCGADownloader <- function(
         ## Download the BCR XML data
         TCGAbiolinks::GDCdownload(
             clinicalQueryBcrXml,
-            directory = rawDataDownloadDirectory
+            directory = rawDataDownloadDirectory,
+            method = GDCDownloadMethod,
+            files.per.chunk = filesPerChunk
         )
 
         ## Load the BCR XML data as a data frame

@@ -109,9 +109,12 @@ TENETCacheAllData <- function() {
                 message(
                     "Caching TENET.ExperimentHub metadata (N=", ehCount, ")"
                 )
-                ## Testing this. The devel version of ExperimentHub doesn't seem
-                ## to have the query function
-                suppressMessages(eh <- ExperimentHub::ExperimentHub()[ehIDs])
+
+                ## Cache the actual data. ExperimentHub doesn't have its own
+                ## query function, but the AnnotationHub one works.
+                suppressMessages(eh <- AnnotationHub::query(
+                    ExperimentHub::ExperimentHub(), "TENET.AnnotationHub"
+                )[ehIDs])
 
                 ## Cache the actual data
                 lapply(seq_along(ehIDs), function(i) {
