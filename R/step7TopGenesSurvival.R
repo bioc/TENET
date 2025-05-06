@@ -170,7 +170,7 @@
     )
 
     caseSampleIntermediateN <- sum(
-        completeCasesClinicalObject[, "grouping"] == "intermediate"
+        completeCasesClinicalObject[, "grouping"] == "Intermediate"
     )
 
     caseSampleLowN <- sum(
