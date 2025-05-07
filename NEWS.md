@@ -1,3 +1,13 @@
+1.1.1
+=====
+
+* Merge survival bug fix from Bioconductor 3.21 release branch; see below
+
+1.1.0
+=====
+
+* Release generated automatically by Bioconductor - no changes
+
 1.0.1
 =====
 
