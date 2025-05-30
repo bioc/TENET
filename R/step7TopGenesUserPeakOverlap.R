@@ -1,36 +1,56 @@
 ## Internal functions used by step7TopGenesUserPeakOverlap
 
-## GRanges overlap function
-## Assumes methSiteGRanges has methylation site IDs in the names()
-.methSitePeakGRangesOverlapTFFunction <- function(
-    methSiteGRanges,
-    peakFileGRanges) {
-    overlapNames <- names(
-        methSiteGRanges[
-            unique(
-                S4Vectors::queryHits(
-                    GenomicRanges::findOverlaps(
-                        methSiteGRanges,
-                        peakFileGRanges
-                    )
-                )
-            ),
-        ]
+## Internal function which determines whether each methylation site overlaps
+## with each peak in the given file
+.peakFileOverlapFunction <- function(
+    peakFileGRanges,
+    methSiteGRanges) {
+    ## If the peak file has no names, generate them from the coordinates
+    if (is.null(names(peakFileGRanges))) {
+        names(peakFileGRanges) <- paste(
+            GenomicRanges::seqnames(peakFileGRanges),
+            GenomicRanges::start(peakFileGRanges),
+            GenomicRanges::end(peakFileGRanges),
+            sep = "_"
+        )
+    }
+
+    ## Make sure the names are unique, since they will be used as column names
+    names(peakFileGRanges) <- make.unique(names(peakFileGRanges))
+
+    ## For each peak in the peak file, determine whether it overlaps with each
+    ## methylation site
+    overlaps <- GenomicRanges::findOverlaps(peakFileGRanges, methSiteGRanges)
+    overlappedSites <- S4Vectors::subjectHits(overlaps)
+    overlappedPeaks <- S4Vectors::queryHits(overlaps)
+
+    ## Create a Boolean matrix with methylation sites in the rows and peaks in
+    ## the columns, whose values are all initially FALSE
+    overlapMatrix <- matrix(
+        nrow = length(methSiteGRanges),
+        ncol = length(peakFileGRanges),
+        data = FALSE,
+        dimnames = list(names(methSiteGRanges), names(peakFileGRanges))
     )
 
-    return(names(methSiteGRanges) %in% overlapNames)
+    ## Set the values at the intersection of the overlapped sites and peaks to
+    ## TRUE
+    overlapMatrix[cbind(overlappedSites, overlappedPeaks)] <- TRUE
+
+    ## Convert the matrix to a data frame and return it
+    return(as.data.frame(overlapMatrix))
 }
 
 ## For the top genes/TFs, get the RE DNA methylation sites linked to them,
-## overlap them with each of the files, then create files noting which datasets
-## the RE DNA methylation sites overlapped with
+## overlap them with each of the files, then create data frames noting which
+## peaks the RE DNA methylation sites overlapped with
 .userPeakOverlapInternalDatasetOutputFunction <- function(
     TENETMultiAssayExperiment,
     hyperHypo,
     geneOrTF,
     geneIDdf,
     methSiteIDdf,
-    peakFileGRangesList,
+    peakData,
     topGeneNumber,
     distanceFromREDNAMethylationSites,
     coreCount) {
@@ -156,23 +176,23 @@
     )
 
     ## For each of the peak files, identify if each RE DNA methylation site is
-    ## found in the vicinity of at least one peak in each file, and add that
-    ## information to methSitesLinkedToGenesDF
-    methSitesLinkedToGenesDF <- cbind(
-        methSitesLinkedToGenesDF,
-        do.call(
-            "cbind",
-            parallel::mclapply(
-                peakFileGRangesList,
-                .methSitePeakGRangesOverlapTFFunction,
-                methSiteGRanges = methSitesLinkedToGenesDFGRanges,
-                mc.cores = coreCount
-            )
-        )
+    ## found in the vicinity of each peak in each file
+    peakOverlapInfoList <- parallel::mclapply(
+        peakData,
+        .peakFileOverlapFunction,
+        methSiteGRanges = methSitesLinkedToGenesDFGRanges,
+        mc.cores = coreCount
     )
 
-    ## Return the data frame
-    return(methSitesLinkedToGenesDF)
+    ## Create a nested list containing the peak overlap information and linked
+    ## DNA methylation site information
+    returnList <- list(
+        "peakFileOverlapInfo" = peakOverlapInfoList,
+        "linkedDNAMethylationSiteInfo" = methSitesLinkedToGenesDF
+    )
+
+    ## Return the list
+    return(returnList)
 }
 
 ## Main step7TopGenesUserPeakOverlap function
@@ -196,10 +216,15 @@
 #' `step6DNAMethylationSitesPerGeneTabulation` functions in its metadata.
 #' @param peakData Specify a data frame, matrix, or GRanges object with
 #' genomic regions (peaks) of interest, organized in a bed-like manner (see
-#' <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>), or a path to a
-#' directory containing .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
-#' with peaks of interest. The files may optionally be compressed
-#' (.gz/.bz2/.xz).
+#' <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>), a path to a directory
+#' containing .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files with peaks
+#' of interest, or a named list of any of these types of input. Peak names are
+#' taken from the fourth column of the input if it exists, or, if the input is a
+#' GRanges object, the names of the ranges. Additional columns can be included,
+#' but are not used by this function. If no names are present, they are
+#' generated from peak coordinates and take the form
+#' `<chromosome>\_<start>\_<end>[.<optionalDuplicateNumber>]`. The files may
+#' optionally be compressed (.gz/.bz2/.xz).
 #' @param geneAnnotationDataset Specify a gene annotation dataset which is
 #' used to identify names for genes by their Ensembl IDs. The argument must be
 #' either a GRanges object (such as one imported via `rtracklayer::import`) or a
@@ -242,15 +267,20 @@
 #' TENETMultiAssayExperiment argument with an additional list of information
 #' named 'step7TopGenesUserPeakOverlap' in its metadata with the output of this
 #' function. This list is subdivided into hypermethGplus or hypomethGplus
-#' results as selected by the user, which are further subdivided into data
-#' frames with data for the unique RE DNA methylation sites linked to the top
-#' overall genes, and for top TF genes only. Each of these data frames contain
-#' a row for each of the unique RE DNA methylation sites linked to the top
-#' genes/TFs for the specified analysis types. These note the locations of the
-#' RE DNA methylation sites and the specified search windows, whether the RE
-#' DNA methylation site is linked to each of the top genes/TFs, and whether
-#' each RE DNA methylation site was found within the specified distance to any
-#' peak in each of the user's peak files.
+#' results as selected by the user, which are further subdivided into lists
+#' with data for the unique RE DNA methylation sites linked to the top
+#' overall genes, and for top TF genes only. Each of these lists contains two
+#' elements. The first, `peakFileOverlapInfo`, is a list of data frames named
+#' after the input peak files (without extensions). If a single R object was
+#' provided as input, the list will contain a single element named 'peakData'.
+#' Each data frame contains peak names in the column names and RE DNA
+#' methylation site IDs in the row names. The Boolean values indicate whether
+#' each RE DNA methylation site overlaps with each peak. The second,
+#' `linkedDNAMethylationSiteInfo`, is a data frame containing a row for each of
+#' the unique RE DNA methylation sites linked to the top genes/TFs for the
+#' specified analysis types. The columns note the location of the RE DNA
+#' methylation site and the specified search windows and whether the RE DNA
+#' methylation site is linked to each of the top genes/TFs.
 #' @export
 #'
 #' @examplesIf interactive()
@@ -327,70 +357,106 @@ step7TopGenesUserPeakOverlap <- function(
         needGeneName = is.na(geneAnnotationDataset)
     )
 
-    ## Check the type of information user has provided for peakData,
-    ## whether it is a single peak file, or a directory with peak files.
-    if (!is.character(peakData)) {
-        ## Check that the file is a matrix or data frame and return an error
-        ## if it is not
-        if (!inherits(peakData, "GRanges")) {
-            if (!is.data.frame(peakData)) {
-                if (!is.matrix(peakData)) {
-                    ## Return an error given it isn't a matrix or data frame
-                    .stopNoCall(
-                        "Please give a data frame, matrix, or GRanges object ",
-                        "with information for peaks of interest, organized in ",
-                        "a bed-like manner, as the peakData argument, or ",
-                        "a path to a directory containing such files."
-                    )
+    ## peakData can be a character string (path to a directory), a single
+    ## GRanges object, matrix, or data frame, or a named list of any of these.
+
+    ## If one object was given, convert it into a one-element list so special
+    ## cases are not needed in later code
+    if (!is.list(peakData)) {
+        peakData <- list("peakData" = peakData)
+    } else {
+        ## Ensure the list has names; later code won't work if it doesn't
+        if (is.null(names(peakData))) {
+            .stopNoCall(
+                "The list given as the peakData argument must have names."
+            )
+        }
+    }
+
+    ## We don't use for(in) because we need the index to get the name
+    for (i in seq_along(peakData)) {
+        peakFile <- peakData[[i]]
+
+        ## Check the type of information user has provided for peakFile,
+        ## whether it is a single peak file, or a directory with peak files.
+        if (!is.character(peakFile)) {
+            ## Check that the file is a matrix or data frame and return an error
+            ## if it is not
+            if (!inherits(peakFile, "GRanges")) {
+                if (!is.data.frame(peakFile)) {
+                    if (!is.matrix(peakFile)) {
+                        ## Return an error given it isn't a matrix or data frame
+                        .stopNoCall(
+                            "The input \"", names(peakData)[[i]], "\" is not ",
+                            "a data frame, matrix, GRanges object, or ",
+                            "path to a directory containing bed-like files."
+                        )
+                    } else {
+                        ## It's a matrix; convert it to a data frame
+                        peakData <- as.data.frame(peakData)
+                    }
                 }
+
+                ## Since the file is not a GRanges object, convert it to one
+
+                ## Change the column names for the first four columns in
+                ## the object
+                colnames(peakFile)[seq_len(3)] <- c("chr", "start", "end")
+
+                ## Set the row names of the data frame so they are copied to
+                ## the GRanges object. peakData[, 4] will be NA if there are
+                ## only three columns, correctly resulting in unset row names.
+                rownames(peakFile) <- peakData[, 4]
+
+                ## Create a GRanges object. Assume starts are 0-based
+                peakFile <- GenomicRanges::makeGRangesFromDataFrame(
+                    df = peakFile,
+                    keep.extra.columns = FALSE,
+                    starts.in.df.are.0based = TRUE
+                )
+
+                ## Replace the entry in the list with its GRanges equivalent
+                peakData[[i]] <- peakFile
+            }
+        } else {
+            ## It is a character string, so it must be a path to a directory.
+            ## Ensure that the supplied directory exists. If it does, load any
+            ## .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files inside.
+            peakFileList <- .listExtBedFiles(
+                extDir = peakData,
+                paramName = names(peakData)[[i]],
+                paramDescription = paste(
+                    "peaks for factors of interest to overlap with",
+                    "linked RE DNA methylation sites"
+                )
+            )
+
+            ## Create a list to store the loaded peak files as GRanges objects
+            peakFileGRangesList <- list()
+
+            for (i in peakFileList) {
+                ## Load the first four columns of the file as a GRanges object
+                peaksGRanges <- rtracklayer::import.bed(
+                    i,
+                    colnames = c("chrom", "start", "end", "name")
+                )
+
+                ## Add that GRanges object to the list
+                peakFileGRangesList <- c(peakFileGRangesList, peaksGRanges)
             }
 
-            ## Since the file is not a GRanges object, convert it to one
+            ## Set the names of the peaks GRanges list to the names of the
+            ## files, with the file extensions removed
+            names(peakFileGRangesList) <- make.unique(sub(
+                "\\.[^.]*(\\.gz)?$",
+                "",
+                basename(unlist(c(peakFileList))),
+                ignore.case = TRUE
+            ))
 
-            ## Change the column names for the first three columns in
-            ## the object
-            colnames(peakData)[seq_len(3)] <- c("chr", "start", "end")
-
-            ## Create a GRanges object. Assume starts are 0-based
-            peakData <- GenomicRanges::makeGRangesFromDataFrame(
-                df = peakData,
-                keep.extra.columns = FALSE,
-                starts.in.df.are.0based = TRUE
-            )
+            ## Add the new peak datasets to the overall list
+            peakData <- c(peakData, peakFileGRangesList)
         }
-
-        ## To make this functionality consistent with functionality written to
-        ## load files from a given directory, create a one-item peak file list
-        ## containing the provided object
-        peakFileGRangesList <- list("peakFile" = peakData)
-    } else {
-        ## Ensure that the supplied directory exists. If it does, load any .bed,
-        ## .narrowPeak, .broadPeak, and/or .gappedPeak files inside.
-        peakFileList <- .listExtBedFiles(
-            extDir = peakData,
-            paramName = "peakData",
-            paramDescription = paste(
-                "peaks for factors of interest to overlap with",
-                "linked RE DNA methylation sites"
-            )
-        )
-
-        ## Create a list to store the loaded peak files as GRanges objects
-        peakFileGRangesList <- list()
-
-        for (i in peakFileList) {
-            ## Load the first three columns of the file as a GRanges object
-            peaksGRanges <- rtracklayer::import.bed(
-                i,
-                colnames = c("chrom", "start", "end")
-            )
-
-            ## Add that GRanges object to the list
-            peakFileGRangesList <- c(peakFileGRangesList, peaksGRanges)
-        }
-
-        ## Set the names to the peaks GRanges list to the names of the files
-        names(peakFileGRangesList) <- basename(unlist(c(peakFileList)))
     }
 
     ## Get gene IDs and names from the MAE, or gene annotation dataset if
@@ -423,7 +489,7 @@ step7TopGenesUserPeakOverlap <- function(
                 geneOrTF = geneOrTF,
                 geneIDdf = geneIDdf,
                 methSiteIDdf = methSiteIDdf,
-                peakFileGRangesList = peakFileGRangesList,
+                peakData = peakData,
                 topGeneNumber = topGeneNumber,
                 distanceFromREDNAMethylationSites =
                     distanceFromREDNAMethylationSites,

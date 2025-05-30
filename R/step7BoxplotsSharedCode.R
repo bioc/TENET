@@ -1,14 +1,15 @@
 ## Internal functions used by the step 7 boxplot functions
 
 ## Internal function that, when given a list of genes or RE DNA methylation
-## sites, will plot a boxplot showing the expression/methylation level of that
-## gene/RE DNA methylation site in the case vs control samples
+## sites, will plot a boxplot or violin plot showing the expression/methylation
+## level of that gene/RE DNA methylation site in the case vs control samples
 .quadrantBoxplotFunction <- function(
     geneOrMethSiteID,
     expOrMet,
     expOrMetData,
     geneIDNameDF = NA,
-    groupInfo) {
+    groupInfo,
+    violinPlot = TRUE) {
     ## Convert the gene ID into the gene name, if genes are being analyzed,
     ## and set the plot title and result name accordingly
     if (expOrMet == "expression") {
@@ -24,10 +25,16 @@
         unlist(expOrMetData[geneOrMethSiteID, groupInfo$group])
     )
 
+    ## Reorder the clusters so control comes first
+    reorderedClusters <- factor(
+        groupInfo$cluster,
+        levels = c("Control", "Case"), ordered = TRUE
+    )
+
     ## Assemble a new data frame with expression/methylation and sample type
     boxplotDF <- data.frame(
         "expOrMetValues" = unlistedExpOrMetData,
-        "sampleType" = groupInfo$cluster
+        "sampleType" = reorderedClusters
     )
 
     ## Manually coloring samples - blue for control, red for case data points
@@ -60,18 +67,27 @@
         simpleTPValue <- NA
     }
 
-    ## Create basic boxplot. Have to use get because R CMD check does not
-    ## understand lazy evaluation
+    ## Create a basic boxplot or violin plot. get() is necessary
+    ## because R CMD check does not understand lazy evaluation.
     boxplot <- ggplot2::ggplot(
         boxplotDF,
-        ggplot2::aes(x = get("sampleType"), y = get("expOrMetValues"))
+        ggplot2::aes(x = get("sampleType"), y = get("expOrMetValues")),
     ) +
-        ggplot2::geom_boxplot(ggplot2::aes(fill = get("sampleType"))) +
+        .ifelseNoIterate(
+            violinPlot,
+            ggplot2::geom_violin(
+                ggplot2::aes(fill = get("sampleType")),
+                draw_quantiles = c(0.25, 0.5, 0.75)
+            ),
+            ggplot2::geom_boxplot(
+                ggplot2::aes(fill = get("sampleType"))
+            )
+        ) +
         ggplot2::ggtitle(
             paste0(plotTitle, "\nt-test p = ", simpleTPValue)
         ) +
         ggplot2::ylab(paste(displayName, expOrMet)) +
-        ggplot2::xlab("Sample Grouping") +
+        ggplot2::xlab("Sample group") +
         ggplot2::guides(fill = "none") +
         ggplot2::theme_bw() +
         ggplot2::scale_fill_manual(values = groupColors) +
@@ -81,10 +97,10 @@
                 color = "black", fill = NA, linewidth = 1
             ),
             plot.background = ggplot2::element_rect(fill = "white"),
-            axis.title.x = ggplot2::element_blank(),
-            axis.title.y = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_text(size = 14, color = "black"),
+            axis.title.y = ggplot2::element_text(size = 16, color = "black"),
             axis.text.x = ggplot2::element_text(size = 18, color = "black"),
-            axis.text.y = ggplot2::element_text(size = 16, color = "black"),
+            axis.text.y = ggplot2::element_text(size = 10, color = "black"),
             panel.grid.major = ggplot2::element_blank(),
             panel.grid.minor = ggplot2::element_blank()
         )

@@ -26,10 +26,15 @@ should also contain the results from the \code{step5OptimizeLinks} and
 
 \item{peakData}{Specify a data frame, matrix, or GRanges object with
 genomic regions (peaks) of interest, organized in a bed-like manner (see
-\url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}), or a path to a
-directory containing .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
-with peaks of interest. The files may optionally be compressed
-(.gz/.bz2/.xz).}
+\url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}), a path to a directory
+containing .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files with peaks
+of interest, or a named list of any of these types of input. Peak names are
+taken from the fourth column of the input if it exists, or, if the input is a
+GRanges object, the names of the ranges. Additional columns can be included,
+but are not used by this function. If no names are present, they are
+generated from peak coordinates and take the form
+\verb{<chromosome>\\_<start>\\_<end>[.<optionalDuplicateNumber>]}. The files may
+optionally be compressed (.gz/.bz2/.xz).}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -81,15 +86,20 @@ Returns the MultiAssayExperiment object given as the
 TENETMultiAssayExperiment argument with an additional list of information
 named 'step7TopGenesUserPeakOverlap' in its metadata with the output of this
 function. This list is subdivided into hypermethGplus or hypomethGplus
-results as selected by the user, which are further subdivided into data
-frames with data for the unique RE DNA methylation sites linked to the top
-overall genes, and for top TF genes only. Each of these data frames contain
-a row for each of the unique RE DNA methylation sites linked to the top
-genes/TFs for the specified analysis types. These note the locations of the
-RE DNA methylation sites and the specified search windows, whether the RE
-DNA methylation site is linked to each of the top genes/TFs, and whether
-each RE DNA methylation site was found within the specified distance to any
-peak in each of the user's peak files.
+results as selected by the user, which are further subdivided into lists
+with data for the unique RE DNA methylation sites linked to the top
+overall genes, and for top TF genes only. Each of these lists contains two
+elements. The first, \code{peakFileOverlapInfo}, is a list of data frames named
+after the input peak files (without extensions). If a single R object was
+provided as input, the list will contain a single element named 'peakData'.
+Each data frame contains peak names in the column names and RE DNA
+methylation site IDs in the row names. The Boolean values indicate whether
+each RE DNA methylation site overlaps with each peak. The second,
+\code{linkedDNAMethylationSiteInfo}, is a data frame containing a row for each of
+the unique RE DNA methylation sites linked to the top genes/TFs for the
+specified analysis types. The columns note the location of the RE DNA
+methylation site and the specified search windows and whether the RE DNA
+methylation site is linked to each of the top genes/TFs.
 }
 \description{
 This function takes the top genes/transcription factors (TFs) by number of

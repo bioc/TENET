@@ -1,27 +1,29 @@
-#' Generate boxplots comparing the methylation level of the specified RE DNA
-#' methylation sites in case and control samples
+#' Generate boxplots or violin plots comparing the methylation level of the
+#' specified RE DNA methylation sites in case and control samples
 #'
 #' This function takes a vector of RE DNA methylation sites specified by the
-#' user and generates boxplots displaying the methylation level of each of these
-#' DNA methylation sites in the case compared to control samples, along with the
-#' results of a Student's t-test comparing the methylation level between these
-#' two groups.
+#' user and generates boxplots or violin plots displaying the methylation level
+#' of each of these DNA methylation sites in the case compared to control
+#' samples, along with the results of a Student's t-test comparing the
+#' methylation level between these two groups.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing a methylation SummarizedExperiment object, such as one created by
 #' the TCGADownloader function.
 #' @param DNAMethylationSites Supply a vector of RE DNA methylation site IDs
-#' for which boxplots with the methylation of those RE DNA methylation sites
-#' will be created.
+#' for which to create boxplots or violin plots with the methylation of those RE
+#' DNA methylation sites.
+#' @param violinPlots Set to TRUE to generate violin plots instead of boxplots.
+#' Defaults to FALSE.
 #' @param coreCount Argument passed as the mc.cores argument to mcmapply. See
 #' `?parallel::mcmapply` for more details. Defaults to 1.
 #' @return Returns the MultiAssayExperiment object given as the
 #' TENETMultiAssayExperiment argument with an additional list of data named
 #' 'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata with
-#' the output of this function, which contains boxplots showing the methylation
-#' of the RE DNA methylation sites of interest in the case and control samples,
-#' with Student's t-test p-values and the ID of the RE DNA methylation site in
-#' the title.
+#' the output of this function, which contains boxplots or violin plots showing
+#' the methylation of the RE DNA methylation sites of interest in the case and
+#' control samples, with Student's t-test p-values and the ID of the RE DNA
+#' methylation site in the title.
 #' @export
 #'
 #' @examplesIf interactive()
@@ -44,6 +46,7 @@
 step7SelectedDNAMethylationSitesCaseVsControlBoxplots <- function(
     TENETMultiAssayExperiment,
     DNAMethylationSites,
+    violinPlots = FALSE,
     coreCount = 1) {
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(TENETMultiAssayExperiment)
@@ -94,7 +97,8 @@ step7SelectedDNAMethylationSitesCaseVsControlBoxplots <- function(
             MoreArgs = list(
                 expOrMet = "methylation",
                 expOrMetData = methylationData,
-                groupInfo = groupInfo
+                groupInfo = groupInfo,
+                violinPlot = violinPlots
             ),
             mc.cores = coreCount,
             USE.NAMES = FALSE

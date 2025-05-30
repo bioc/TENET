@@ -3,16 +3,22 @@
 \name{step7LinkedDNAMethylationSitesMotifSearching}
 \alias{step7LinkedDNAMethylationSitesMotifSearching}
 \title{Perform motif searching for transcription factor motifs in the vicinity of
-RE DNA methylation sites linked to the specified transcription factors}
+DNA methylation sites or custom regions defined by the user.}
 \usage{
 step7LinkedDNAMethylationSitesMotifSearching(
   TENETMultiAssayExperiment,
-  TFMotifList,
-  geneAnnotationDataset = NA,
-  DNAMethylationArray = NA,
   hypermethGplusAnalysis = TRUE,
   hypomethGplusAnalysis = TRUE,
+  DNAMethylationSites = NA,
   distanceFromREDNAMethylationSites = 100,
+  GRangesToSearch = NA,
+  andStrings = NULL,
+  orStrings = NULL,
+  notStrings = NULL,
+  TFMotifList,
+  useOnlyDNAMethylationSitesLinkedToTFs = TRUE,
+  geneAnnotationDataset = NA,
+  DNAMethylationArray = NA,
   matchPWMMinScore = "75\%",
   coreCount = 1
 )
@@ -22,16 +28,82 @@ step7LinkedDNAMethylationSitesMotifSearching(
 containing expression and methylation SummarizedExperiment objects, such as
 one created by the TCGADownloader function. This MultiAssayExperiment object
 should also contain the results from the \code{step5OptimizeLinks} function
-in its metadata.}
+in its metadata if \code{hypermethGplusAnalysis} or \code{hypomethGplusAnalysis} are
+TRUE.}
+
+\item{hypermethGplusAnalysis}{Set to TRUE to do motif searching in the
+vicinity of hypermethylated RE DNA methylation sites with at least one linked
+TF. \strong{Note}: if \code{useOnlyDNAMethylationSitesLinkedToTFs} is also TRUE, only
+RE DNA methylation sites linked specifically to TFs specified via the
+\code{TFMotifList} argument will be used. Defaults to TRUE.}
+
+\item{hypomethGplusAnalysis}{Set to TRUE to do motif searching in the
+vicinity of hypomethylated RE DNA methylation sites with at least one linked
+TF. \strong{Note}: if \code{useOnlyDNAMethylationSitesLinkedToTFs} is also TRUE, only
+RE DNA methylation sites linked specifically to TFs specified via the
+\code{TFMotifList} argument will be used. Defaults to TRUE.}
+
+\item{DNAMethylationSites}{Supply a vector of DNA methylation site IDs
+to perform motif searching in the vicinity of. These sites will be combined
+with any RE DNA methylation sites selected by the \code{hypermethGplusAnalysis}
+and \code{hypomethGplusAnalysis} arguments. If set to NA, no additional DNA
+methylation sites in the TENETMultiAssayExperiment will be included in the
+motif search. Defaults to NA.}
+
+\item{distanceFromREDNAMethylationSites}{Specify a positive integer in base
+pairs to be the distance from the DNA methylation sites identified by the
+\code{hypermethGplusAnalysis}, \code{hypomethGplusAnalysis}, and \code{DNAMethylationSites}
+arguments within which motif searching will be performed. Defaults to 100.}
+
+\item{GRangesToSearch}{Specify a GRanges object which contains user-specified
+genomic coordinates of regions to perform motif searching on. The coordinates
+should correspond to the human hg38 genome. Any regions included in this
+GRanges object will be combined with regions defined by the
+\code{hypermethGplusAnalysis}, \code{hypomethGplusAnalysis}, \code{DNAMethylationSites}, and
+\code{distanceFromREDNAMethylationSites} arguments. If set to NA, no additional
+user specified ranges will be included in the motif search. Defaults to NA.}
+
+\item{andStrings}{Specify a vector of values which will be provided to the
+\code{andStrings} argument of the \code{query()} function in the MotifDb package. Good
+values to provide to this vector include species and transcription factor
+database names to refine the search. Set to NULL to include no terms in this
+search (\strong{Note:}: if both \code{andStrings} and \code{orStrings} are set to NULL, only
+the PWMs specified by the \code{TFMotifList} argument will be used). Defaults to
+NULL.}
+
+\item{orStrings}{Specify a vector of values which will be provided to the
+\code{orStrings} argument of the \code{query()} function in the MotifDb package. Good
+values to provide to this vector include names of specific TFs to limit the
+search to. The user may also specify "humanTranscriptionFactors" to use all
+TFs identified in 'The Human Transcription Factors' by Lambert et al. 2018.
+Set to NULL to include no terms in this search (note, if both \code{andStrings}
+and \code{orStrings} are set to NULL, only the PWMs specified by the \code{TFMotifList}
+argument will be used). TFs with valid PWMs found in combination with the
+\code{andStrings} object will be included along with PWMs specified by the user in
+a list given to the \code{TFMotifList} argument in the final search assessing TF
+motifs in the vicinity of the regions specified previously. Defaults to NULL.}
+
+\item{notStrings}{Specify a vector of values which will be provided to the
+\code{notStrings} argument of the \code{query()} function in the MotifDb package. Set
+to NULL to exclude no terms from this search. Defaults to NULL.}
 
 \item{TFMotifList}{Specify a named list mapping transcription factor gene
 names and/or IDs to their respective motif position weight matrix (PWM). The
-PWMs should be in the form of a 4xN matrix. If a PWM is not available, the
-user can select one by querying the MotifDb package database. See the
-example below for more infornation. \strong{Note:} The name of each PWM in the
-list must match the gene name or Ensembl ID of a gene in the
-TENETMultiAssayExperiment with RE DNA methylation sites linked to it for the
-specified analysis types.}
+PWMs should be in the form of a 4xN matrix. PWMs specified in this list are
+combined with any TF PWMs identified by the MotifDb package using the
+\code{andStrings} and \code{orStrings} arguments. Set to NA to not use any user
+specified TF motif PWMs.}
+
+\item{useOnlyDNAMethylationSitesLinkedToTFs}{If set to TRUE, only
+hypomethylated or hypermethylated RE DNA methylation sites, as selected by
+the \code{hypermethGplusAnalysis} and \code{hypomethGplusAnalysis} arguments, which are
+found to be linked to the TFs in the given \code{TFMotifList} by TENET will be
+analyzed. To use this functionality, at least one of \code{hypermethGplusAnalysis}
+or \code{hypomethGplusAnalysis} must be set to TRUE, \code{DNAMethylationSites},
+\code{andStrings}, and \code{orStrings} must be NA, and the name of each PWM in the
+list given to \code{TFMotifList} must match the gene name or Ensembl ID of a gene
+in the TENETMultiAssayExperiment with RE DNA methylation sites linked to it
+for the specified analysis types. Defaults to TRUE.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -55,18 +127,6 @@ only those overlapping will be considered for analysis. If set to NA, all RE
 DNA methylation sites with locations listed in the rowRanges of the
 "methylation" SummarizedExperiment object are used. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to do motif searching in the
-vicinity of hypermethylated RE DNA methylation sites with G+ links to the TF
-of interest. Defaults to TRUE.}
-
-\item{hypomethGplusAnalysis}{Set to TRUE to do motif searching in the
-vicinity of hypomethylated RE DNA methylation sites with G+ links to the TF
-of interest. Defaults to TRUE.}
-
-\item{distanceFromREDNAMethylationSites}{Specify a positive integer in base
-pairs to be the distance from the linked RE DNA methylation sites within
-which motif searching will be performed. Defaults to 100.}
-
 \item{matchPWMMinScore}{Specify the \code{min.score} argument passed to the
 matchPWM function for motif searching. See \code{?Biostrings::matchPWM} for more
 details. Defaults to "75\%".}
@@ -78,97 +138,140 @@ details. Defaults to "75\%".}
 Returns the MultiAssayExperiment object given as the
 TENETMultiAssayExperiment argument with an additional list of information
 named 'step7LinkedDNAMethylationSitesMotifSearching' in its metadata with
-the output of this function. This list is subdivided into hypermethGplus or
-hypomethGplus results as selected by the user. Each contains a list for each
-specified TF gene with a seqLogo of the gene's motif PWM, a table of the
-PWM, and two additional tables with information on motif occurrences found
-in the vicinity of linked RE DNA methylation sites. The first table contains
-information about each motif found in the vicinity of the linked RE DNA
-methylation sites for the TF gene at the specified matchPWMMinScore. The
-second lists each RE DNA methylation site linked to the TF gene for the
-analysis types specified, and the number of motif occurrences found in the
-vicinity of each of those RE DNA methylation sites.
+the output of this function. This list includes the GRanges object
+"DNAMethylationSitesGRanges" with the regions motif searching was
+performed on, "TFMotifPWMList" which includes the TF PWMs used in the
+searching, "TFMotifSeqLogoList" which includes the visual seqLogo
+representations of the PWMs included in the "TFMotifPWMList", the
+"DNAMethylationSitesMotifOccurrences" data frame, which notes all
+predicted motifs with their location, the DNA methylation region they were
+found within, and the TF PWM that was found, as well as a second
+"totalMotifOccurrencesPerDNAMethylationSite" data frame, which notes how
+many times each TF PWM listed in the "TFMotifPWMList" was found in each
+region in the "DNAMethylationSitesGRanges". If
+useOnlyDNAMethylationSitesLinkedToTFs was set to TRUE, a final data frame
+"linkedUniqueDNAMethylationSitesTFOverlap" is included, which notes which of
+the TFs in the "TFMotifPWMList" the identified hyper- or hypomethylated RE
+DNA methylation sites used in the analysis were linked to (otherwise this
+will be NA).
 }
 \description{
-This function takes a named list of transcription factors (TFs) and their
-binding motifs, and for each of the TFs, it identifies if the specified
-motif for that TF is found within a user-specified distance to each RE DNA
-methylation site linked to that TF from both of the hyper- or hypomethylated
-G+ analysis quadrants, as selected by the user.
+This function takes a user-specified named list of transcription factors
+(TFs) and their binding motifs combined with search terms passed to MotifDb's
+\code{query()} function to identify additional TF binding motifs. For each
+of the TFs, this function identifies if the specified motif, in the from of
+a position weight matrix (PWM), is found within a user-specified distance to
+RE DNA methylation sites from the hyper- or hypomethylated G+ analysis
+quadrants and/or specified RE DNA methylation sites, and/or within custom
+genomic regions, as selected by the user.
+}
+\details{
+\strong{Note}: When running this function, it is recommended to either select a
+small number of TFs and larger number of DNA methylation sites, or a
+small number of sites and larger number of TFs, as motif analysis can take
+a significant amount of time to run.
 }
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-## These examples require the MotifDb package
-if (requireNamespace("MotifDb", quietly = TRUE)) {
-    ## Show available motifs for example TF FOXA1
-    names(MotifDb::query(MotifDb::MotifDb, "FOXA1"))
+## Show available motifs for example TF FOXA1
+names(MotifDb::query(MotifDb::MotifDb, "FOXA1"))
 
-    ## The seqLogos for all input motifs will also be included in the output
-    ## of this function. Alternatively, individual motifs can be visualized
-    ## with the seqLogo function from the seqLogo package.
-    seqLogo::seqLogo(MotifDb::query(MotifDb::MotifDb, "FOXA1")[[3]])
+## The seqLogos for all input motifs will also be included in the output
+## of this function. Alternatively, individual motifs can be visualized
+## with the seqLogo function from the seqLogo package.
+seqLogo::seqLogo(MotifDb::query(MotifDb::MotifDb, "FOXA1")[[3]])
 
-    ## Once PWMs have been selected for use, a list containing them must be
-    ## created
-    exampleTFMotifList <- list(
-        "FOXA1" = MotifDb::query(MotifDb::MotifDb, "FOXA1")[[3]],
-        "ESR1" = MotifDb::query(MotifDb::MotifDb, "ESR1")[[4]]
-    )
+## Once PWMs have been selected for use, a list containing them must be
+## created
+exampleTFMotifList <- list(
+    "FOXA1" = MotifDb::query(MotifDb::MotifDb, "FOXA1")[[3]],
+    "ESR1" = MotifDb::query(MotifDb::MotifDb, "ESR1")[[4]]
+)
 
-    ## This example uses the example MultiAssayExperiment provided in the
-    ## TENET.ExperimentHub package to perform motif overlapping for all
-    ## hyper- and hypomethylated RE DNA methylation sites linked to the
-    ## FOXA1 and ESR1 genes using the motifs for each gene specified in the
-    ## exampleTFMotifList. Gene names and locations, and the locations of RE
-    ## DNA methylation sites, will be retrieved from the rowRanges of the
-    ## 'expression' and 'methylation' SummarizedExperiment objects in the
-    ## example MultiAssayExperiment. Regions within 100 bp of linked RE DNA
-    ## methylation sites will be checked for motifs, and a similarity
-    ## threshold of 75\% will be used to identify motifs. The analysis will
-    ## be performed using one CPU core.
+## This example uses the example MultiAssayExperiment provided in the
+## TENET.ExperimentHub package to perform motif overlapping for all
+## hyper- and hypomethylated RE DNA methylation sites linked to the
+## FOXA1 and ESR1 genes using the motifs for each gene specified in the
+## exampleTFMotifList. Gene names and locations, and the locations of RE
+## DNA methylation sites, will be retrieved from the rowRanges of the
+## 'expression' and 'methylation' SummarizedExperiment objects in the
+## example MultiAssayExperiment. Regions within 100 bp of linked RE DNA
+## methylation sites will be checked for motifs, and a similarity
+## threshold of 75\% will be used to identify motifs. The analysis will
+## be performed using one CPU core.
 
-    ## Load the example TENET MultiAssayExperiment object
-    ## from the TENET.ExperimentHub package
-    exampleTENETMultiAssayExperiment <-
-        TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
+## Load the example TENET MultiAssayExperiment object
+## from the TENET.ExperimentHub package
+exampleTENETMultiAssayExperiment <-
+    TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-    ## Use the example dataset to do the motif searching
-    returnValue <- step7LinkedDNAMethylationSitesMotifSearching(
-        TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
-        TFMotifList = exampleTFMotifList
-    )
+## Use the example dataset to do the motif searching
+returnValue <- step7LinkedDNAMethylationSitesMotifSearching(
+    TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+    TFMotifList = exampleTFMotifList
+)
 
-    ## This example uses the example MultiAssayExperiment provided in the
-    ## TENET.ExperimentHub package to perform motif overlapping for only
-    ## hypomethylated RE DNA methylation sites linked to the FOXA1 and ESR1
-    ## genes using the motifs for each gene specified in the
-    ## exampleTFMotifList. Gene names and locations, and the locations of RE
-    ## DNA methylation sites, will be retrieved from the rowRanges of the
-    ## 'expression' and 'methylation' SummarizedExperiment objects in the
-    ## example MultiAssayExperiment. Regions within 50 bp of linked RE DNA
-    ## methylation sites will be checked for motifs, and a similarity
-    ## threshold of 80\% will be used to identify motifs. The analysis will
-    ## be performed using 8 CPU cores.
+## This example uses the example MultiAssayExperiment provided in the
+## TENET.ExperimentHub package to perform motif overlapping for only
+## hypomethylated RE DNA methylation sites linked to the FOXA1 and ESR1
+## genes using the motifs for each gene specified in the
+## exampleTFMotifList. Gene names and locations, and the locations of RE
+## DNA methylation sites, will be retrieved from the rowRanges of the
+## 'expression' and 'methylation' SummarizedExperiment objects in the
+## example MultiAssayExperiment. Regions within 50 bp of linked RE DNA
+## methylation sites will be checked for motifs, and a similarity
+## threshold of 80\% will be used to identify motifs. The analysis will
+## be performed using 8 CPU cores.
 
-    ## Load the example TENET MultiAssayExperiment object
-    ## from the TENET.ExperimentHub package
-    exampleTENETMultiAssayExperiment <-
-        TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
+## Load the example TENET MultiAssayExperiment object
+## from the TENET.ExperimentHub package
+exampleTENETMultiAssayExperiment <-
+    TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-    ## Use the example dataset to do the motif searching
-    returnValue <- step7LinkedDNAMethylationSitesMotifSearching(
-        TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
-        TFMotifList = exampleTFMotifList,
-        hypermethGplusAnalysis = FALSE,
-        distanceFromREDNAMethylationSites = 50,
-        matchPWMMinScore = "80\%",
-        coreCount = 8
-    )
-} else {
-    message(
-        "These examples require the MotifDb package. Run ",
-        'BiocManager::install("MotifDb") and rerun these examples.'
-    )
-}
+## Use the example dataset to do the motif searching
+returnValue <- step7LinkedDNAMethylationSitesMotifSearching(
+    TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+    TFMotifList = exampleTFMotifList,
+    hypermethGplusAnalysis = FALSE,
+    distanceFromREDNAMethylationSites = 50,
+    matchPWMMinScore = "80\%",
+    coreCount = 8
+)
+
+## This final example uses the example MultiAssayExperiment provided in
+## the TENET.ExperimentHub package to perform motif overlapping for a
+## just a pair of specific DNA methylation sites, using the FOXA1 and
+## MYBL2 motifs, as well as motifs for all human transcription factors
+## found in the SwissRegulon database accessed by the MotifDb::query()
+## function. As before, Gene names and locations, and the locations of RE
+## DNA methylation sites, will be retrieved from the rowRanges of the
+## 'expression' and 'methylation' SummarizedExperiment objects in the
+## example MultiAssayExperiment. Regions within 100 bp of linked RE DNA
+## methylation sites will be checked for motifs, and a similarity
+## threshold of 75\% will be used to identify motifs. The analysis will
+## be performed using one CPU core.
+
+## Create a new list of example PWMs
+exampleTFMotifList2 <- list(
+    "FOXA1" = MotifDb::query(MotifDb::MotifDb, "FOXA1")[[3]],
+    "MYBL2" = MotifDb::query(MotifDb::MotifDb, "MYBL2")[[5]]
+)
+
+## Load the example TENET MultiAssayExperiment object
+## from the TENET.ExperimentHub package
+exampleTENETMultiAssayExperiment <-
+    TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
+
+## Use the example dataset to do the motif searching
+returnValue <- step7LinkedDNAMethylationSitesMotifSearching(
+    TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+    hypermethGplusAnalysis = FALSE,
+    hypomethGplusAnalysis = FALSE,
+    DNAMethylationSites = c("cg04134755", "cg10216151"),
+    andStrings = c("Hsapiens", "SwissRegulon"),
+    orStrings = "humanTranscriptionFactors",
+    TFMotifList = exampleTFMotifList,
+    useOnlyDNAMethylationSitesLinkedToTFs = FALSE
+)
 \dontshow{\}) # examplesIf}
 }

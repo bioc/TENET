@@ -922,9 +922,9 @@ Hi-C, copy number variation, somatic mutation, and patient survival information.
 * `step7ExpressionVsDNAMethylationScatterplots`: Create scatterplots displaying the expression of the top genes and the methylation levels of each of their linked RE DNA methylation sites, along with copy number variation, somatic mutation, and purity data, if provided by the user
 * `step7LinkedDNAMethylationSiteCountHistograms`: Create histograms displaying the number of genes or transcription factors linked to a given number of RE DNA methylation sites
 * `step7LinkedDNAMethylationSitesMotifSearching`: Perform motif searching for transcription factor motifs in the vicinity of RE DNA methylation sites linked to the specified transcription factors
-* `step7SelectedDNAMethylationSitesCaseVsControlBoxplots`: Generate boxplots comparing the methylation level of the specified RE DNA methylation sites in case and control samples
+* `step7SelectedDNAMethylationSitesCaseVsControlBoxplots`: Generate boxplots or violin plots comparing the methylation level of the specified RE DNA methylation sites in case and control samples
 * `step7StatesForLinks`: Identify which of the case samples harbor each of the identified regulatory element DNA methylation site-gene links
-* `step7TopGenesCaseVsControlExpressionBoxplots`: Create boxplots comparing the expression level of the top genes/transcription factors in case and control samples
+* `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes/transcription factors in case and control samples
 * `step7TopGenesCircosPlots`: Generate Circos plots displaying the links between top identified genes and each of the RE DNA methylation sites linked to them
 * `step7TopGenesDNAMethylationHeatmaps`: Generate heatmaps displaying the methylation level of all RE DNA methylation sites linked to the top genes/transcription factors, along with the expression of those genes in the column headers, in the case samples within the supplied MultiAssayExperiment object
 * `step7TopGenesExpressionCorrelationHeatmaps`: Generate mirrored heatmaps displaying the correlation of the expression values of the top genes/TFs
@@ -1171,10 +1171,10 @@ head(
 )
 ```
 
-## `step7SelectedDNAMethylationSitesCaseVsControlBoxplots`: Generate boxplots comparing the methylation level of the specified RE DNA methylation sites in case and control samples
+## `step7SelectedDNAMethylationSitesCaseVsControlBoxplots`: Generate boxplots or violin plots comparing the methylation level of the specified RE DNA methylation sites in case and control samples
 
 We begin this example by identifying some RE DNA methylation sites for which to
-generate methylation boxplots.
+generate methylation boxplots and violin plots.
 
 First, we look at the top genes by number of linked hypomethylated RE DNA
 methylation sites.
@@ -1230,6 +1230,36 @@ metadata(
 )$step7SelectedDNAMethylationSitesCaseVsControlBoxplots$cg13776095
 ```
 
+We next demonstrate the use of this function to generate violin plots.
+
+```{r}
+exampleObject <- step7SelectedDNAMethylationSitesCaseVsControlBoxplots(
+    TENETMultiAssayExperiment = exampleObject,
+    DNAMethylationSites = DNAMethylationSites,
+    violinPlots = TRUE
+)
+
+## Each plot is saved under the ID of the RE DNA methylation site and included
+## in the metadata of the returned MultiAssayExperiment object under the
+## step7SelectedDNAMethylationSitesCaseVsControlBoxplots list
+head(names(
+    metadata(
+        exampleObject
+    )$step7SelectedDNAMethylationSitesCaseVsControlBoxplots
+))
+```
+
+As an example, we examine the violin plot for the RE DNA methylation site with
+the ID cg13776095, as above.
+
+```{r fig.width=10, fig.height=7}
+## Note: There may be a warning for "rows containing non-finite values" if there
+## are any samples lacking methylation data for the RE DNA methylation site.
+metadata(
+    exampleObject
+)$step7SelectedDNAMethylationSitesCaseVsControlBoxplots$cg13776095
+```
+
 ## `step7StatesForLinks`: Identify which of the case samples harbor each of the identified regulatory element DNA methylation site-gene links
 
 This function identifies which of the samples provided in the dataset likely
@@ -1273,10 +1303,14 @@ head(
 )
 ```
 
-## `step7TopGenesCaseVsControlExpressionBoxplots`: Create boxplots comparing the expression level of the top genes/transcription factors in case and control samples
+## `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes/transcription factors in case and control samples
 
-This function generates boxplots comparing the expression of the top genes/TFs
-by number of linked RE DNA methylation sites in the case versus control samples.
+This function generates boxplots or violin plots comparing the expression of the
+top genes/TFs by number of linked RE DNA methylation sites in the case versus
+control samples.
+
+To demonstrate this function, we first generate boxplots for the top 10 TFs by
+number of linked hypermethylated G+ RE DNA methylation sites.
 
 ```{r}
 ## Run the step7TopGenesCaseVsControlExpressionBoxplots function.
@@ -1305,6 +1339,48 @@ names(
 ```
 
 As an example, we examine the boxplot for gene ENSG00000107485 (GATA3).
+
+```{r fig.width=10, fig.height=7}
+## Note: There may be a warning for "rows containing non-finite values" if there
+## are any samples lacking expression data for the given gene.
+metadata(
+    exampleObject
+)$step7TopGenesCaseVsControlExpressionBoxplots$hypomethGplusResults$
+    topGenes$ENSG00000107485
+```
+
+We next demonstrate the use of this function to generate violin plots.
+
+```{r}
+## Run the step7TopGenesCaseVsControlExpressionBoxplots function, this time
+## using the option to generate violin plots.
+## Since we performed analyses only using TFs in the step 3 function, the
+## top genes are all TFs, so a message that separate output for
+## TFs will be skipped is displayed.
+exampleObject <- step7TopGenesCaseVsControlExpressionBoxplots(
+    TENETMultiAssayExperiment = exampleObject,
+    hypomethGplusAnalysis = TRUE,
+    hypermethGplusAnalysis = FALSE,
+    violinPlots = TRUE,
+    topGeneNumber = 10
+)
+
+## Results are included in the metadata of the returned MultiAssayExperiment
+## object under the step7TopGenesCaseVsControlExpressionBoxplots list.
+## For each analysis type, results are included in sub-lists, each of which
+## contains lists with results for topGenes and topTFs, unless the
+## top genes are all TFs, in which case the separate top TFs output is skipped.
+## Each violin plot is saved under its gene ID.
+names(
+    metadata(
+        exampleObject
+    )$step7TopGenesCaseVsControlExpressionBoxplots$
+        hypomethGplusResults$topGenes
+)
+```
+
+As an example, we examine the violin plot for gene ENSG00000107485 (GATA3), as
+above.
 
 ```{r fig.width=10, fig.height=7}
 ## Note: There may be a warning for "rows containing non-finite values" if there
@@ -1483,11 +1559,15 @@ head(
 
 ## `step7TopGenesSurvival`: Perform Kaplan-Meier and Cox regression analyses to assess the association of top gene expression and linked RE DNA methylation site methylation with patient survival
 
-This function uses the survival status and time for each of the samples in the
-dataset to perform survival analyses on the expression of the top genes and
-methylation of their linked RE DNA methylation sites. For each gene and RE DNA
-methylation site, a Kaplan-Meier survival plot can be generated, and statistics
-from both Kaplan-Meier and univariate Cox regression analyses are output.
+This function takes the top genes/transcription factors (TFs) by number of
+linked RE DNA methylation sites identified by the
+`step6DNAMethylationSitesPerGeneTabulation` function up to the number
+specified by the user and generates survival plots and tables with statistics
+from survival analyses assessing the survival association of the expression
+level of each gene as well as the methylation level of each RE DNA
+methylation site linked to them, using groupings based on either percentile
+cutoffs or Jenks natural breaks as specified by the user, for Kaplan-Meier
+analyses.
 
 First, we load the example survival status and survival time data from the
 `exampleTENETClinicalDataFrame` object.
@@ -1525,6 +1605,10 @@ head(survivalTimeData)
 
 Next, we perform the survival analysis using the vital status and survival time
 data.
+
+In our first example, we use the default sample grouping settings, which assign
+the top and bottom 50% of the samples to high and low methylation and
+expression, respectively.
 
 ```{r fig.width=10, fig.height=7}
 ## Since we performed analyses only using TFs in the step 3 function, the
@@ -1584,6 +1668,61 @@ names(
         exampleObject
     )$step7TopGenesSurvival$hypomethGplusResults$
         topGenes$topGenesSurvivalPlots
+)
+
+## Plot the Kaplan-Meier survival plot for GATA3 (ENSG00000107485) as an example
+metadata(
+    exampleObject
+)$step7TopGenesSurvival$hypomethGplusResults$
+    topGenes$topGenesSurvivalPlots$ENSG00000107485
+```
+
+Sample groups can also be automatically calculated using Jenks natural breaks.
+To demonstrate, we perform the same analysis using three natural breakpoints in
+the data.
+
+```{r fig.width=10, fig.height=7}
+## Use the example dataset to do the survival analysis
+exampleObject <- step7TopGenesSurvival(
+    TENETMultiAssayExperiment = exampleObject,
+    highProportion = NA,
+    lowProportion = NA,
+    useJenksBreaks = TRUE,
+    jenksBreaksGroupCount = 3
+)
+
+## Plot the Kaplan-Meier survival plot for GATA3 (ENSG00000107485) as an example
+metadata(
+    exampleObject
+)$step7TopGenesSurvival$hypomethGplusResults$
+    topGenes$topGenesSurvivalPlots$ENSG00000107485
+```
+
+Custom sample groups used for the survival analysis can also be specified. This
+allows the use of any number of groups with arbitrary names and multiple cutoff
+ranges. To demonstrate, we perform the same analysis with four custom groups.
+
+```{r fig.width=10, fig.height=7}
+## Create a custom cutoffsMatrix which will split the samples into quartiles
+## for the purposes of the survival analyses and will also define custom
+## names for these groups
+cutoffMatrix <- data.frame(
+    "Low" = c(0, (1 / 4), (1 / 2), (3 / 4)),
+    "High" = c((1 / 4), (1 / 2), (3 / 4), 1)
+)
+rownames(cutoffMatrix) <- c(
+    "GroupOne",
+    "GroupTwo",
+    "GroupThree",
+    "GroupFour"
+)
+
+## Use the example dataset and cutoffMatrix to do the survival analysis
+exampleObject <- step7TopGenesSurvival(
+    TENETMultiAssayExperiment = exampleObject,
+    highProportion = NA,
+    lowProportion = NA,
+    survivalGroupingCutoffs = cutoffMatrix
 )
 
 ## Plot the Kaplan-Meier survival plot for GATA3 (ENSG00000107485) as an example
@@ -1706,11 +1845,12 @@ invisible(file.remove(unlist(bedPath)))
 
 ## `step7TopGenesUserPeakOverlap`: Identify if RE DNA methylation sites linked to top genes/transcription factors are located within a specific distance of specified genomic regions
 
-The `step7TopGenesUserPeakOverlap` function requires the user to supply either
-a path to a directory containing bed-like files with peaks of interest, or a
-single peak object given as a GRanges, data frame, or matrix object, as seen in
-the example below. To illustrate the use of this function, we will use an
-example peak dataset from the TENET.ExperimentHub package.
+The `step7TopGenesUserPeakOverlap` function requires the user to supply one or
+more paths to directories containing bed-like files with peaks of interest or
+peak datasets given as GRanges, data frame, or matrix objects. If multiple
+inputs are provided, they should be passed in the form of a named list. To
+illustrate the use of this function, we will use an example peak dataset from
+the TENET.ExperimentHub package.
 
 ```{r}
 ## Load the example peak dataset from the TENET.ExperimentHub package
@@ -1718,8 +1858,13 @@ examplePeakFile <- TENET.ExperimentHub::exampleTENETPeakRegions()
 
 ## Peak files for this function must include the chromosome of each peak region
 ## in the first column, and the start and end positions of each peak in the
-## second and third columns respectively. Additional columns can be included,
-## but are not considered in this function.
+## second and third columns respectively. Peak names are taken from the fourth
+## column of the input if it exists, or, if the input is a GRanges object, the
+## names of the ranges. If no names are present, they are generated from peak
+## coordinates and take the form
+## '<chromosome>_<start>_<end>[.<optionalDuplicateNumber>]'. The files may
+## optionally be compressed (.gz/.bz2/.xz). Additional columns can be included,
+## but are not used by this function.
 class(examplePeakFile)
 head(examplePeakFile)
 ```
@@ -1744,21 +1889,37 @@ exampleObject <- step7TopGenesUserPeakOverlap(
 )
 
 ## Results are included in the metadata of the returned MultiAssayExperiment
-## object under the step7TopGenesSurvival list.
-## For each analysis type, data frames with peak overlap information are
-## included in sub-lists, with each data frame saved under the names
-## topGenes and topTFs, unless the top genes are all TFs, in which case
-## the separate top TFs output is skipped.
-
-## Display the data frame of results for RE DNA methylation sites linked to the
-## top TFs. A variety of data are included for each RE DNA methylation site,
-## including its location, the coordinates of its search window, the top genes
-## it is linked to, and whether it was found within the specified distance to
-## any peak in each of the peak files.
-head(
+## object under the step7TopGenesUserPeakOverlap list.
+## For each analysis type, lists of data frames with peak overlap information
+## are included in sub-lists, with each list saved under the names topGenes and
+## topTFs, unless the top genes are all TFs, in which case the separate top TFs
+## output is skipped.
+names(
     metadata(
         exampleObject
     )$step7TopGenesUserPeakOverlap$hypomethGplusResults$topGenes
+)
+
+## Display the peak overlap information for RE DNA methylation sites linked to
+## the top TFs. Since a single R object was provided as input, the output list
+## contains a single data frame named 'peakData'. This data frame contains peak
+## names in the column names and RE DNA methylation site IDs in the row names.
+## The Boolean values indicate whether each RE DNA methylation site overlaps
+## with each peak.
+metadata(
+    exampleObject
+)$step7TopGenesUserPeakOverlap$hypomethGplusResults$topGenes$
+    peakFileOverlapInfo$peakData[seq_len(5), seq_len(5)]
+
+## Display the data frame of information for RE DNA methylation sites linked to
+## the top TFs. A variety of data are included for each RE DNA methylation site,
+## including its location, the coordinates of its search window, and the top
+## genes it is linked to.
+head(
+    metadata(
+        exampleObject
+    )$step7TopGenesUserPeakOverlap$hypomethGplusResults$topGenes$
+        linkedDNAMethylationSiteInfo
 )
 ```
 
@@ -1787,8 +1948,28 @@ data("humanTranscriptionFactorList", package = "TENET")
 head(humanTranscriptionFactorList)
 ```
 
+## `humanTranscriptionFactorDb`: Human transcription factor database
+
+A data frame with information on genes which were identified as human TFs by
+Lambert SA et al (PMID: 29425488). Candidate proteins were manually examined by
+a panel of experts based on available data. Proteins with experimentally
+demonstrated DNA binding specificity were considered TFs. Other proteins, such
+as co-factors and RNA binding proteins, were classified as non-TFs.
+**Citation:** Lambert SA, Jolma A, Campitelli LF, et al. The Human
+Transcription Factors. Cell. 2018 Feb 8;172(4):650-665. doi:
+10.1016/j.cell.2018.01.029. Erratum in: Cell. 2018 Oct 4;175(2):598-599. PMID:
+29425488.
+
+```{r}
+## Load the humanTranscriptionFactorDb dataset
+data("humanTranscriptionFactorDb", package = "TENET")
+## Display some information for the first few TFs in the dataset
+humanTranscriptionFactorDb[seq_len(5), seq_len(5)]
+```
+
 # Session info
 
 ```{r}
 sessionInfo()
 ```
+

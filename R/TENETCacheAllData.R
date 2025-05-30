@@ -81,7 +81,14 @@ TENETCacheAllData <- function() {
                         "Caching TENET.AnnotationHub datasets (%d/%d): %s (%s)",
                         i, ahCount, names(id), id
                     ))
-                    suppressMessages(AnnotationHub::cache(ah[id]))
+                    ## The cache function succeeds but returns nothing if the
+                    ## AnnotationHub snapshot is too old to contain the dataset
+                    if (
+                        length(suppressMessages(AnnotationHub::cache(ah[id])))
+                        != 1
+                    ) {
+                        stop() ## Error message will be output below
+                    }
                 })
             },
             error = function(cond) {
@@ -123,7 +130,14 @@ TENETCacheAllData <- function() {
                         "Caching TENET.ExperimentHub datasets (%d/%d): %s (%s)",
                         i, ehCount, names(id), id
                     ))
-                    suppressMessages(ExperimentHub::cache(eh[id]))
+                    ## The cache function succeeds but returns nothing if the
+                    ## ExperimentHub snapshot is too old to contain the dataset
+                    if (
+                        length(suppressMessages(ExperimentHub::cache(eh[id])))
+                        != 1
+                    ) {
+                        stop() ## Error message will be output below
+                    }
                 })
             },
             error = function(cond) {

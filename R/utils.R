@@ -39,9 +39,11 @@
 
 ## Internal function to validate the analysis type arguments and return a
 ## vector of the selected analysis types
-.validateAnalysisTypes <- function(hypermethAnalysis, hypomethAnalysis) {
+.validateAnalysisTypes <- function(
+    hypermethAnalysis, hypomethAnalysis,
+    allowNone = FALSE) {
     analysisTypes <- NULL
-    if (!any(hypermethAnalysis, hypomethAnalysis)) {
+    if (!allowNone && !any(hypermethAnalysis, hypomethAnalysis)) {
         .stopNoCall(
             "All analysis types have been set to FALSE. Set at least one ",
             "analysis type to TRUE."

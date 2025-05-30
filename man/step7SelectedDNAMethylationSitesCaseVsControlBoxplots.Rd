@@ -3,12 +3,13 @@
 %   R/step7SelectedDNAMethylationSitesCaseVsControlBoxplots.R
 \name{step7SelectedDNAMethylationSitesCaseVsControlBoxplots}
 \alias{step7SelectedDNAMethylationSitesCaseVsControlBoxplots}
-\title{Generate boxplots comparing the methylation level of the specified RE DNA
-methylation sites in case and control samples}
+\title{Generate boxplots or violin plots comparing the methylation level of the
+specified RE DNA methylation sites in case and control samples}
 \usage{
 step7SelectedDNAMethylationSitesCaseVsControlBoxplots(
   TENETMultiAssayExperiment,
   DNAMethylationSites,
+  violinPlots = FALSE,
   coreCount = 1
 )
 }
@@ -18,8 +19,11 @@ containing a methylation SummarizedExperiment object, such as one created by
 the TCGADownloader function.}
 
 \item{DNAMethylationSites}{Supply a vector of RE DNA methylation site IDs
-for which boxplots with the methylation of those RE DNA methylation sites
-will be created.}
+for which to create boxplots or violin plots with the methylation of those RE
+DNA methylation sites.}
+
+\item{violinPlots}{Set to TRUE to generate violin plots instead of boxplots.
+Defaults to FALSE.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mcmapply. See
 \code{?parallel::mcmapply} for more details. Defaults to 1.}
@@ -28,17 +32,17 @@ will be created.}
 Returns the MultiAssayExperiment object given as the
 TENETMultiAssayExperiment argument with an additional list of data named
 'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata with
-the output of this function, which contains boxplots showing the methylation
-of the RE DNA methylation sites of interest in the case and control samples,
-with Student's t-test p-values and the ID of the RE DNA methylation site in
-the title.
+the output of this function, which contains boxplots or violin plots showing
+the methylation of the RE DNA methylation sites of interest in the case and
+control samples, with Student's t-test p-values and the ID of the RE DNA
+methylation site in the title.
 }
 \description{
 This function takes a vector of RE DNA methylation sites specified by the
-user and generates boxplots displaying the methylation level of each of these
-DNA methylation sites in the case compared to control samples, along with the
-results of a Student's t-test comparing the methylation level between these
-two groups.
+user and generates boxplots or violin plots displaying the methylation level
+of each of these DNA methylation sites in the case compared to control
+samples, along with the results of a Student's t-test comparing the
+methylation level between these two groups.
 }
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

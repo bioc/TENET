@@ -53,9 +53,11 @@ setMethod(
     function(.Object, plot, width = NA, height = NA) {
         if (.isSingleNA(width) || .isSingleNA(height)) {
             ds <- grDevices::dev.size(units = "in")
-            if (.isSingleNA(width)) .Object@width <- ds[[1]]
-            if (.isSingleNA(height)) .Object@height <- ds[[2]]
+            if (.isSingleNA(width)) width <- ds[[1]]
+            if (.isSingleNA(height)) height <- ds[[2]]
         }
+        .Object@width <- width
+        .Object@height <- height
         .Object@plot <- plot
         methods::validObject(.Object)
         return(.Object)

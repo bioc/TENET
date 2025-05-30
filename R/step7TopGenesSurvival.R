@@ -9,8 +9,9 @@
     geneIDdf = NULL, ## Specify when expressionOrMethylation is "Expression"
     clinicalObject,
     TENETMultiAssayExperiment,
-    highThreshold,
-    lowThreshold,
+    survivalGroupingCutoffs,
+    useJenksBreaks,
+    jenksBreaksGroupCount,
     createPlot ## TRUE or FALSE - affects plots for KM only
     ) {
     ## If a gene was specified, get the gene name corresponding to the gene ID
@@ -135,184 +136,271 @@
         ),
     ]
 
-    ## Calculate quantiles
-    highCutoffQuantile <- unname(
-        stats::quantile(
-            completeCasesClinicalObject[, "inputValue"],
-            highThreshold,
-            na.rm = TRUE
-        )[1]
-    )
+    ### Now determine the groups of interest:
 
-    lowCutoffQuantile <- unname(
-        stats::quantile(
-            completeCasesClinicalObject[, "inputValue"],
-            lowThreshold,
-            na.rm = TRUE
-        )[1]
-    )
+    ## First, if Jenks breaks are TRUE, we need to calculate where they are:
+    if (useJenksBreaks) {
+        ## First, add one to the jenksBreaksGroupCount. This
+        ## is because when breaks are calculated, it actually generates that
+        ## many breaks, including lowest and highest bounds, so it actually
+        ## creates one fewer groups:
+        jenksBreaksGroupCountInt <- (jenksBreaksGroupCount + 1)
 
-    ## Determine if each sample is in the high, low, or intermediate quartiles
-    completeCasesClinicalObject$grouping <- ifelse(
-        completeCasesClinicalObject$inputValue > highCutoffQuantile,
-        "High",
-        ifelse(
-            completeCasesClinicalObject$inputValue <= lowCutoffQuantile,
-            "Low",
-            "Intermediate"
+        ## Calculate the Jenks breaks for the number of groups specified by the
+        ## user
+        breaksValues <- BAMMtools::getJenksBreaks(
+            completeCasesClinicalObject[, "inputValue"],
+            k = jenksBreaksGroupCountInt
         )
-    )
 
-    ## Get the counts of case samples in the three categories of
-    ## expression/methylation level
-    caseSampleHighN <- sum(
-        completeCasesClinicalObject[, "grouping"] == "High"
-    )
+        ## Sometimes breaks aren't unique - if this is the case, make the breaks
+        ## unique by adding a small offset value to the breaks that aren't
+        ## unique:
+        while (any(duplicated(breaksValues))) {
+            breaksValues[
+                duplicated(breaksValues)
+            ] <- breaksValues[
+                duplicated(breaksValues)
+            ] + (max(breaksValues) * 0.01)
+        }
 
-    caseSampleIntermediateN <- sum(
-        completeCasesClinicalObject[, "grouping"] == "Intermediate"
-    )
+        ## Create a vector with each of the groups' cutoff values:
+        cutoffVector <- c(
+            rbind(breaksValues[-length(breaksValues)], breaksValues[-1])
+        )
 
-    caseSampleLowN <- sum(
-        completeCasesClinicalObject[, "grouping"] == "Low"
-    )
+        ## Create names for the Jenks Groups:
+        if (jenksBreaksGroupCount == 2) {
+            GroupNames <- c("jenksGroupA_(Lowest)", "jenksGroupB_(Highest)")
+        } else {
+            ## If there are more than two groups, then there are groups in the
+            ## middle that don't get a special label:
+            GroupNames <- c(
+                "jenksGroupA_(Lowest)",
+                paste0(
+                    "jenksGroup",
+                    LETTERS[seq_len(jenksBreaksGroupCount)[
+                        c(-1, -jenksBreaksGroupCount)
+                    ]]
+                ),
+                paste0(
+                    "jenksGroup",
+                    LETTERS[jenksBreaksGroupCount],
+                    "_(Highest)"
+                )
+            )
+        }
 
-    ## Get the mean expression/methylation in each group
-    ## and convert the value for the Intermediate group to NA if it is NaN
-    ## i.e. that group has no members (which can happen)
-    caseSampleHighMean <- mean(
+        ## Use the cut() function to assign groups based on the Jenks breaks,
+        ## then adjust the names of the groups to be the names we set above.
+        ## This will ensure the first group includes the lowest sample, up to
+        ## and including samples at the first break point, and every group after
+        ## will exclude samples at the lower bound, but include those at the
+        ## next breakpoint.
+        jenksGroupsValuesFactor <- factor(
+            cut(
+                completeCasesClinicalObject[, "inputValue"],
+                breaks = breaksValues,
+                include.lowest = TRUE,
+                right = TRUE
+            )
+        )
+        levels(jenksGroupsValuesFactor) <- GroupNames
+
+        ## Then assign these values back to the completeCasesClinicalObject
+        completeCasesClinicalObject$grouping <- jenksGroupsValuesFactor
+    } else {
+        ## Use the row names of the survivalGroupingCutoffs as the group names
+        GroupNames <- rownames(survivalGroupingCutoffs)
+
+        ## For each proportion value listed in the columns of
+        ## survivalGroupingCutoffs, get an actual value correlating to it
+        survivalGroupingCutoffs[, 3] <- unname(
+            stats::quantile(
+                completeCasesClinicalObject[, "inputValue"],
+                survivalGroupingCutoffs[, 1],
+                na.rm = TRUE
+            )
+        )
+
+        survivalGroupingCutoffs[, 4] <- unname(
+            stats::quantile(
+                completeCasesClinicalObject[, "inputValue"],
+                survivalGroupingCutoffs[, 2],
+                na.rm = TRUE
+            )
+        )
+
+        ## Create a vector with each of the groups' cutoff values:
+        cutoffVector <- c(
+            rbind(survivalGroupingCutoffs[, 3], survivalGroupingCutoffs[, 4])
+        )
+
+        ## For each of the inputValues, see what survival grouping it falls in
+        setGroupsValuesFactor <- NULL
+
+        for (i in seq_len(nrow(completeCasesClinicalObject))) {
+            ## Get the value for i:
+            iValue <- completeCasesClinicalObject[i, "inputValue"]
+
+            ## Find the row, if any, the value is between:
+            rowOverlapBool <- NULL
+
+            for (j in seq_len(nrow(survivalGroupingCutoffs))) {
+                if (j == 1) {
+                    rowOverlapBool <- c(
+                        rowOverlapBool,
+                        (
+                            iValue >= survivalGroupingCutoffs[j, 3] &
+                                iValue <= survivalGroupingCutoffs[j, 4]
+                        )
+                    )
+                } else {
+                    rowOverlapBool <- c(
+                        rowOverlapBool,
+                        (
+                            iValue > survivalGroupingCutoffs[j, 3] &
+                                iValue <= survivalGroupingCutoffs[j, 4]
+                        )
+                    )
+                }
+            }
+
+            ## Use the row overlap Bool to identify which group the sample is
+            ## in
+            if (!any(rowOverlapBool)) {
+                setGroupsValuesFactor <- c(
+                    setGroupsValuesFactor,
+                    NA
+                )
+            } else {
+                setGroupsValuesFactor <- c(
+                    setGroupsValuesFactor,
+                    which(rowOverlapBool)
+                )
+            }
+        }
+
+        ## Now set the levels of the factor to be the GroupNames
+        setGroupsValuesFactor <- factor(setGroupsValuesFactor)
+        levels(setGroupsValuesFactor) <- GroupNames
+
+        ## Then assign these values back to the completeCasesClinicalObject
+        completeCasesClinicalObject$grouping <- setGroupsValuesFactor
+    }
+
+    ## Now get the counts for each group in the dataset:
+
+    ## First get a count of all the NA values, if there are any
+    NACountGroup <- sum(is.na(completeCasesClinicalObject$grouping))
+
+    ## Next get the counts from the "Freq" column when converting a table of the
+    ## grouping column to a data frame (this will automatically ignore all NA
+    ## values which is why we needed to get an NA count first)
+    groupCounts <- as.data.frame(table(completeCasesClinicalObject$grouping))$
+        Freq
+
+    ## Next calculate a mean expression/methylation value for each group in the
+    ## dataset:
+
+    ## First do it for samples that are NA:
+    NAGroupMean <- mean(
         completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping == "High",
+            is.na(completeCasesClinicalObject$grouping),
             "inputValue"
-        ],
-        na.rm = TRUE
+        ]
     )
 
-    caseSampleIntermediateMean <- mean(
-        completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping == "Intermediate",
-            "inputValue"
-        ],
-        na.rm = TRUE
-    )
-
-    caseSampleLowMean <- mean(
-        completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping == "Low",
-            "inputValue"
-        ],
-        na.rm = TRUE
-    )
+    ## Then get the means for the groups in order
+    groupMeans <- stats::aggregate(
+        . ~ grouping,
+        completeCasesClinicalObject[, c("inputValue", "grouping")],
+        mean
+    )$inputValue
 
     ## Calculate the proportion of samples which have reached the event
     ## rather than not/censored in the groupings
-    proportionEventHigh <- as.numeric(
-        nrow(
-            completeCasesClinicalObject[
-                completeCasesClinicalObject$grouping == "High" &
-                    completeCasesClinicalObject$vitalStatus == 2,
-            ]
-        ) /
-            nrow(
-                completeCasesClinicalObject[
-                    completeCasesClinicalObject$grouping == "High",
-                ]
-            )
-    )
+    ## This can be done largely with aggregate means on vitalStatus, subtracting
+    ## 1 since events are listed as 2, while not/censored as 1.
+    NAProportionEvent <- mean(
+        completeCasesClinicalObject[
+            is.na(completeCasesClinicalObject$grouping),
+            "vitalStatus"
+        ]
+    ) - 1
 
-    proportionEventIntermediate <- as.numeric(
-        nrow(
-            completeCasesClinicalObject[
-                completeCasesClinicalObject$grouping == "Intermediate" &
-                    completeCasesClinicalObject$vitalStatus == 2,
-            ]
-        ) /
-            nrow(
-                completeCasesClinicalObject[
-                    completeCasesClinicalObject$grouping == "Intermediate",
-                ]
-            )
-    )
+    groupProportionEvents <- stats::aggregate(
+        . ~ grouping,
+        completeCasesClinicalObject[, c("vitalStatus", "grouping")],
+        mean
+    )$vitalStatus - 1
 
-    proportionEventLow <- as.numeric(
-        nrow(
-            completeCasesClinicalObject[
-                completeCasesClinicalObject$grouping == "Low" &
-                    completeCasesClinicalObject$vitalStatus == 2,
-            ]
-        ) /
-            nrow(
-                completeCasesClinicalObject[
-                    completeCasesClinicalObject$grouping == "Low",
-                ]
-            )
-    )
-
-    ## Convert NaN values for intermediate group to NA
-    ## (Which can happen as group can be empty)
-    if (is.nan(caseSampleIntermediateMean)) {
-        caseSampleIntermediateMean <- NA
-        proportionEventIntermediate <- NA
-    }
-
-    ## Determine which high vs low group had greater proportion of reaching
-    ## the event of interest
+    ## Now check whether the group with the lowest or highest
+    ## expression/methylation had higher event proportion occuring:
     if (expressionOrMethylation == "Expression") {
         highestEventProportionGroup <- ifelse(
-            proportionEventHigh > proportionEventLow,
-            "highExpressionLowSurvival",
+            groupProportionEvents[length(groupProportionEvents)] >
+                groupProportionEvents[1],
+            "highestExpressionLowSurvival",
             ifelse(
-                proportionEventHigh < proportionEventLow,
-                "lowExpressionLowSurvival",
+                groupProportionEvents[length(groupProportionEvents)] <
+                    groupProportionEvents[1],
+                "lowestExpressionLowSurvival",
                 "unclear"
             )
         )
     } else if (expressionOrMethylation == "Methylation") {
         highestEventProportionGroup <- ifelse(
-            proportionEventHigh > proportionEventLow,
-            "highMethylationLowSurvival",
+            groupProportionEvents[length(groupProportionEvents)] >
+                groupProportionEvents[1],
+            "highestMethylationLowSurvival",
             ifelse(
-                proportionEventHigh < proportionEventLow,
-                "lowMethylationLowSurvival",
+                groupProportionEvents[length(groupProportionEvents)] <
+                    groupProportionEvents[1],
+                "lowestMethylationLowSurvival",
                 "unclear"
             )
         )
     }
 
-    ## Start with KM statistics first
-
-    ## Create survival objects for KM analyses
-    ## KM will include only High/Low samples
-    KMSurvivalObject <- survival::Surv(
-        completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping %in% c("High", "Low"),
-            "time"
-        ],
-        completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping %in% c("High", "Low"),
-            "vitalStatus"
-        ]
+    ## Add a numeric value for the groups to the completeCasesClinicalObject.
+    ## Samples with the lowest grouping will be 1, incrementing by 1 for the
+    ## next highest expression/methylation group.
+    completeCasesClinicalObject$groupingNumerical <- as.numeric(
+        completeCasesClinicalObject$grouping
     )
 
-    rownames(KMSurvivalObject) <- rownames(
-        completeCasesClinicalObject[
-            completeCasesClinicalObject$grouping %in% c("High", "Low"),
-        ]
-    )
-
-    ## Get the grouping of the samples without any
-    ## Intermediate samples (to go with our KM survival object)
-    inputValueGroup <- completeCasesClinicalObject[
-        !completeCasesClinicalObject$grouping == "Intermediate",
-        "grouping"
+    ## Now remove the NA values for the purposes of the survival analysis
+    completeCasesClinicalObjectNoNA <- completeCasesClinicalObject[
+        !is.na(completeCasesClinicalObject$grouping),
     ]
+
+    ## Start with KM statistics, comparing only the highest to lowest groups
+
+    ## Get the completeCasesClinicalObjectNoNA dataset with just the highest and
+    ## lowest groups
+    completeCasesClinicalObjectNoNAKM <- completeCasesClinicalObjectNoNA[
+        completeCasesClinicalObjectNoNA$groupingNumerical %in% c(
+            1,
+            max(completeCasesClinicalObjectNoNA$groupingNumerical)
+        ),
+    ]
+
+    ## Create a survival object for KM analyses
+    KMSurvivalObject <- survival::Surv(
+        completeCasesClinicalObjectNoNAKM$time,
+        completeCasesClinicalObjectNoNAKM$vitalStatus
+    )
+    rownames(KMSurvivalObject) <- rownames(completeCasesClinicalObjectNoNAKM)
 
     ## Perform the survival analysis.
     ## This uses the expression grouping as the x variable
     ## and the KM survival object as the y variable to create
     ## a table with information about the test
     ## including chi-squared p-value
-    KMSurvivalTable <- survival::survdiff(KMSurvivalObject ~ inputValueGroup)
+    KMSurvivalTable <- survival::survdiff(
+        KMSurvivalObject ~ completeCasesClinicalObjectNoNAKM$grouping
+    )
 
     ## Get the chi-squared test statistic from the analysis above
     KMChiSquared <- KMSurvivalTable$chisq
@@ -323,128 +411,232 @@
         1 - stats::pchisq(abs(KMChiSquared), df = 1)
     )
 
+    ## Next do Cox Regression analyses considering the groups both as a
+    ## categorical and numerical variable
+
+    ## Create a survival object for Cox analyses
+    coxSurvivalObject <- survival::Surv(
+        completeCasesClinicalObjectNoNA$time,
+        completeCasesClinicalObjectNoNA$vitalStatus
+    )
+    rownames(coxSurvivalObject) <- rownames(completeCasesClinicalObjectNoNA)
+
+    ## Set up separate Cox regression objects, one with the groups as a
+    ## categorical variable and one with them as a continuous numerical variable
+    ## set up earlier. suppressWarnings is here as the Loglik may not converge
+    ## for some analyses.
+    coxSurvivalTableCategorical <- suppressWarnings(survival::coxph(
+        coxSurvivalObject ~ completeCasesClinicalObjectNoNA$grouping
+    ))
+
+    coxSurvivalTableContinuousNumerical <- suppressWarnings(survival::coxph(
+        coxSurvivalObject ~ completeCasesClinicalObjectNoNA$groupingNumerical
+    ))
+
+    ## Get the coefficient, Hazard Ratio (exp(coeff)) and individual p-values
+    ## for each of the groups in the Categorical analysis.
+    ## Hazard ratios are found in the second column of the
+    ## summary()$coefficients object, while individual p values are found in the
+    ## 5th
+    coxSurvivalCategoricalGroupCoefficients <- unname(
+        summary(
+            coxSurvivalTableCategorical
+        )$coefficients[, 1]
+    )
+
+    coxSurvivalCategoricalGroupHazardRatios <- unname(
+        summary(
+            coxSurvivalTableCategorical
+        )$coefficients[, 2]
+    )
+
+    coxSurvivalCategoricalGroupPvalues <- unname(
+        summary(
+            coxSurvivalTableCategorical
+        )$coefficients[, 5]
+    )
+
+    ## Get the Coefficient and Hazard Ratio (exp(coeff)) for the continuous
+    ## numerical treatment of the groups
+    ## Singular in variable name here since only one value is present
+    coxSurvivalContinuousNumericalGroupCoefficient <- unname(
+        summary(
+            coxSurvivalTableContinuousNumerical
+        )$coefficients[, 1]
+    )
+
+    coxSurvivalContinuousNumericalGroupHazardRatio <- unname(
+        summary(
+            coxSurvivalTableContinuousNumerical
+        )$coefficients[, 2]
+    )
+
+    coxSurvivalContinuousNumericalGroupPvalue <- unname(
+        summary(
+            coxSurvivalTableContinuousNumerical
+        )$coefficients[, 5]
+    )
+
+    ## Get the p-values for the overall models
+    ## p-values are found in the 3rd element of each of the summary()$"testname"
+    ## objects
+    coxSurvivalCategoricalLikelihoodRatioPvalue <- unname(summary(
+        coxSurvivalTableCategorical
+    )$logtest[3])
+
+    coxSurvivalCategoricalScoreLogRankPvalue <- unname(summary(
+        coxSurvivalTableCategorical
+    )$sctest[3])
+
+    coxSurvivalCategoricalWaldPvalue <- unname(summary(
+        coxSurvivalTableCategorical
+    )$waldtest[3])
+
+    coxSurvivalContinuousNumericalLikelihoodRatioPvalue <- unname(summary(
+        coxSurvivalTableContinuousNumerical
+    )$logtest[3])
+
+    coxSurvivalContinuousNumericalScoreLogRankPvalue <- unname(summary(
+        coxSurvivalTableContinuousNumerical
+    )$sctest[3])
+
+    coxSurvivalContinuousNumericalWaldPvalue <- unname(summary(
+        coxSurvivalTableContinuousNumerical
+    )$waldtest[3])
+
     ## Create and return KM plots if createPlot is TRUE
     ## Otherwise, return vector of statistics for both KM and Cox
     ## to later combine into a data frame
     if (createPlot) {
-        ## Create legend names for high/low expression groups
-        legendNameHigh <- paste(inputName, "high")
-        legendNameLow <- paste(inputName, "low")
+        ## Create a survfit formatted survival object for the Cox Regression
+        ## analysis with the grouping considered as a categorical variable:
+        survfitObject <- survival::survfit(
+            survival::Surv(
+                time,
+                vitalStatus
+            ) ~ grouping,
+            data = completeCasesClinicalObjectNoNA
+        )
 
+        ## Create a vector of legend labels which note the group names, and the
+        ## number of samples present in each group:
+        legendLabels <- paste0(
+            levels(completeCasesClinicalObjectNoNA$grouping),
+            "_(n=",
+            groupCounts,
+            ")"
+        )
+
+        ## Format two of the p-values for display in the title
         ## Round the p-value displayed the graph to 3 digits
+        coxSurvivalCategoricalScoreLogRankPvalueFormatted <- formatC(
+            coxSurvivalCategoricalScoreLogRankPvalue,
+            format = "e",
+            digits = 3
+        )
+
         KMSurvivalPvalueFormatted <- formatC(
             KMSurvivalPvalue,
             format = "e",
             digits = 3
         )
 
+        ## Create a title to display:
         ## Create the plot title
         ## with gene name and p-value included
         ## If expression is specified, include the gene name and ESNG.
         ## If it's methylation, include only the methylation site ID
         if (expressionOrMethylation == "Expression") {
-            KMSurvivalTitle <- paste0(
+            SurvivalTitle <- paste0(
                 inputName,
                 " - ",
                 inputID,
-                "\nKaplan-Meier Survival analysis\np = ",
+                "\nCox Regression Log-Rank p = ",
+                coxSurvivalCategoricalScoreLogRankPvalueFormatted,
+                "\nKaplan-Meier Lowest vs. Highest p = ",
                 KMSurvivalPvalueFormatted
             )
         } else if (expressionOrMethylation == "Methylation") {
-            KMSurvivalTitle <- paste0(
+            SurvivalTitle <- paste0(
                 inputName,
-                "\nKaplan-Meier Survival analysis\np = ",
+                "\nCox Regression Log-Rank p = ",
+                coxSurvivalCategoricalScoreLogRankPvalueFormatted,
+                "\nKaplan-Meier Lowest vs. Highest p = ",
                 KMSurvivalPvalueFormatted
             )
         }
 
-        ## Change margins to increase size at top of plot for title
-        ## Mar: bottom, left, top and right
-        graphics::par("mar" = c(5, 4, 4.75, 2))
-
-        ## Actually create the survival plot
-        ## Using a similar structure to what was used to generate the p-value
+        ## Create the plot:
         .newInvisibleRecordablePlot()
-        plot(
-            survival::survfit(KMSurvivalObject ~ inputValueGroup),
 
-            ## Color the lines (high in red first!)
-            col = c("red", "black"),
-
-            ## Add thickness to the lines
-            lwd = 3,
-
-            ## Use the title that was created earlier as the title of the plot
-            main = KMSurvivalTitle,
-
-            ## Set titles of the x and y axis
-            ## Note: TCGA measures survival in days as noted
+        basePlot <- survminer::ggsurvplot(
+            survfitObject,
+            censor.shape = "",
+            size = 1,
             xlab = "Time",
             ylab = "Survival Proportion",
-
-            ## Change axis size
-            cex.axis = 1,
-            cex.main = 1.5,
-            cex.lab = 1.25
+            legend.labs = legendLabels,
+            title = SurvivalTitle,
+            data = completeCasesClinicalObjectNoNA
         )
 
-        ## Add a legend to the plot
-        graphics::legend(
-
-            ## Set X position of legend in graph
-            x = max(completeCasesClinicalObject$time) * (2 / 3),
-
-            ## Set Y position of legend in graph
-            y = 1,
-
-            ## Use the legend titles that were created earlier
-            legend = c(legendNameHigh, legendNameLow),
-
-            ## As above, use black for low and red for high
-            col = c("red", "black"),
-
-            ## Coloring the text in the legend as well
-            text.col = c("red", "black"),
-            cex = 1.5,
-
-            ## Change the shape of the labels in the legend
-            pch = 15
+        basePlot$plot + ggplot2::theme(
+            plot.title = ggplot2::element_text(
+                hjust = 0.5, face = "bold", size = 8
+            ),
+            legend.text = ggplot2::element_text(size = 8)
         )
 
         ## Save the plot to an object
-        KMSurvivalPlotObject <- .recordTENETSavedSizePlot()
+        SurvivalPlotObject <- .recordTENETSavedSizePlot()
 
         ## Close the plot
         grDevices::dev.off()
 
         ## Return the plot
-        return(KMSurvivalPlotObject)
+        return(SurvivalPlotObject)
     } else {
-        ## Do the Cox analysis
-        ## Note: This will only be done if createPlot is set to FALSE
-        ## since if createPlot is set to TRUE only the KM plots will be output
-        ## without any statistics, and no plots are generated from Cox analyses
-
-        ## Create survival objects for Cox analyses. Cox uses all samples.
-        CoxSurvivalObject <- survival::Surv(
-            completeCasesClinicalObject$time,
-            completeCasesClinicalObject$vitalStatus
-        )
-
-        rownames(CoxSurvivalObject) <- rownames(
-            completeCasesClinicalObject
-        )
-
-        ## We can use the CoxSurvivalObject along with the
-        ## expression/methylation of our gene/RE DNA methylation site of
-        ## interest to do the Cox regression survival analysis
-        coxRegressionResults <- survival::coxph(
-            CoxSurvivalObject ~ inputValue,
-            data = completeCasesClinicalObject
-        )
+        ## Convert NaN values for samples lacking a group to NA
+        ## (Which can happen as there may be no samples without a group)
+        if (is.nan(NAGroupMean)) {
+            NAGroupMean <- NA
+            NAProportionEvent <- NA
+        }
 
         ## Assemble a vector of results with information relevant to
         ## the given gene/RE DNA methylation site
+        survivalReturnVector <- c(
+            controlSampleN,
+            caseSampleN,
+            NACountControlInputValue,
+            NACountCaseInputValue,
+            controlMeanInputValue,
+            caseMeanInputValue,
+            NACountCaseClinical,
+            controlPresentSampleN,
+            casePresentSampleN,
+            cutoffVector,
+            NACountGroup,
+            groupCounts,
+            NAGroupMean,
+            groupMeans,
+            NAProportionEvent,
+            groupProportionEvents,
+            highestEventProportionGroup,
+            KMSurvivalPvalue,
+            coxSurvivalCategoricalGroupCoefficients,
+            coxSurvivalCategoricalGroupHazardRatios,
+            coxSurvivalCategoricalGroupPvalues,
+            coxSurvivalContinuousNumericalGroupCoefficient,
+            coxSurvivalContinuousNumericalGroupHazardRatio,
+            coxSurvivalContinuousNumericalGroupPvalue,
+            coxSurvivalCategoricalLikelihoodRatioPvalue,
+            coxSurvivalCategoricalScoreLogRankPvalue,
+            coxSurvivalCategoricalWaldPvalue,
+            coxSurvivalContinuousNumericalLikelihoodRatioPvalue,
+            coxSurvivalContinuousNumericalScoreLogRankPvalue,
+            coxSurvivalContinuousNumericalWaldPvalue
+        )
 
         namesTemplate <- c(
             "controlSampleCount",
@@ -456,62 +648,68 @@
             "caseSampleCountClinicalMissing",
             "controlSampleCountWithData",
             "caseSampleCountWithData",
-            "caseSampleCountHigh@TYPE@Group",
-            "caseSampleCountIntermediate@TYPE@Group",
-            "caseSampleCountLow@TYPE@Group",
-            "caseMean@TYPE@High@TYPE@Group",
-            "caseMean@TYPE@Intermediate@TYPE@Group",
-            "caseMean@TYPE@Low@TYPE@Group",
-            "caseProportionEventHigh@TYPE@Group",
-            "caseProportionEventIntermediate@TYPE@Group",
-            "caseProportionEventLow@TYPE@Group",
-            "KMSurvivalDirectionOfEffect",
-            "KMSurvivalPValue",
-            "CoxRegressionCoefficient",
-            "CoxHazardRatio",
-            "CoxSurvivalDirectionOfEffect",
-            "CoxSurvivalPValue"
-        )
-
-        survivalReturnVector <- c(
-            controlSampleN,
-            caseSampleN,
-            NACountControlInputValue,
-            NACountCaseInputValue,
-            controlMeanInputValue,
-            caseMeanInputValue,
-            NACountCaseClinical,
-            controlPresentSampleN,
-            casePresentSampleN,
-            caseSampleHighN,
-            caseSampleIntermediateN,
-            caseSampleLowN,
-            caseSampleHighMean,
-            caseSampleIntermediateMean,
-            caseSampleLowMean,
-            proportionEventHigh,
-            proportionEventIntermediate,
-            proportionEventLow,
-            highestEventProportionGroup,
-            as.numeric(KMSurvivalPvalue),
-            as.numeric(unname(coxRegressionResults$coefficients)),
-            as.numeric(unname(exp(coxRegressionResults$coefficients))),
-            ifelse(
-                as.numeric(
-                    unname(exp(coxRegressionResults$coefficients))
-                ) > 1,
-                paste0("high", expressionOrMethylation, "LowSurvival"),
-                ifelse(
-                    as.numeric(
-                        unname(
-                            exp(coxRegressionResults$coefficients)
-                        )
-                    ) < 1,
-                    paste0("low", expressionOrMethylation, "LowSurvival"),
-                    "unclear"
+            c(
+                rbind(
+                    paste0(
+                        levels(completeCasesClinicalObject$grouping),
+                        "_min@TYPE@CutoffValue"
+                    ),
+                    paste0(
+                        levels(completeCasesClinicalObject$grouping),
+                        "_max@TYPE@CutoffValue"
+                    )
                 )
             ),
-            as.numeric(summary(coxRegressionResults)$coefficients[, 5])
+            "caseSampleCountWithout@TYPE@Group",
+            paste0(
+                "caseSampleCount_",
+                levels(completeCasesClinicalObject$grouping),
+                "_@TYPE@Group"
+            ),
+            "caseMean@TYPE@Without@TYPE@Group",
+            paste0(
+                "caseMean@TYPE@_",
+                levels(completeCasesClinicalObject$grouping),
+                "_@TYPE@Group"
+            ),
+            "caseProportionEventWithout@TYPE@Group",
+            paste0(
+                "caseProportionEvent_",
+                levels(completeCasesClinicalObject$grouping),
+                "_@TYPE@Group"
+            ),
+            "KMSurvivalDirectionOfEffect",
+            "KMSurvivalPValue",
+            paste0(
+                "coxRegressionGroupCategoricalAnalysis_",
+                levels(completeCasesClinicalObject$grouping)[
+                    2:length(levels(completeCasesClinicalObject$grouping))
+                ],
+                "_Coefficient"
+            ),
+            paste0(
+                "coxRegressionGroupCategoricalAnalysis_",
+                levels(completeCasesClinicalObject$grouping)[
+                    2:length(levels(completeCasesClinicalObject$grouping))
+                ],
+                "_HazardRatio"
+            ),
+            paste0(
+                "coxRegressionGroupCategoricalAnalysis_",
+                levels(completeCasesClinicalObject$grouping)[
+                    2:length(levels(completeCasesClinicalObject$grouping))
+                ],
+                "_GroupPvalue"
+            ),
+            "coxRegressionGroupContinuousNumericalAnalysisCoefficient",
+            "coxRegressionGroupContinuousNumericalAnalysisHazardRatio",
+            "coxRegressionGroupContinuousNumericalAnalysisGroupPvalue",
+            "coxRegressionGroupCategoricalAnalysisLikelihoodRatioPvalue",
+            "coxRegressionGroupCategoricalAnalysisScore(LogRank)Pvalue",
+            "coxRegressionGroupCategoricalAnalysisWaldPvalue",
+            "coxRegressionGroupContinuousNumericalAnalysisLikelihoodRatioPvalue",
+            "coxRegressionGroupContinuousNumericalAnalysisScore(LogRank)Pvalue",
+            "coxRegressionGroupContinuousNumericalAnalysisWaldPvalue"
         )
 
         if (expressionOrMethylation == "Expression") {
@@ -534,7 +732,7 @@
             "@TYPE@", expressionOrMethylation, namesTemplate
         )
 
-        ## Return the statistics
+        ## Return the vector:
         return(survivalReturnVector)
     }
 }
@@ -547,13 +745,14 @@
     clinicalObject,
     TENETMultiAssayExperiment,
     topGeneNumber,
-    highThreshold,
-    lowThreshold,
     geneOrTF, ## Return info for top genes ("Gene") or TFs ("TF")
     ## Return results for genes ("Genes") or RE DNA methylation sites linked to
     ## genes ("DNAMethylationSites")
     genesOrMethSites,
     statsOrPlots, ## Return stats ("Stats") or plots ("Plots")
+    survivalGroupingCutoffs,
+    useJenksBreaks,
+    jenksBreaksGroupCount,
     coreCount) {
     ## Generate the quadrant result name to grab data for
     quadrantResultsName <- paste0(hyperHypo, "methGplusResults")
@@ -611,8 +810,9 @@
                         geneIDdf = geneIDdf,
                         clinicalObject = clinicalObject,
                         TENETMultiAssayExperiment = TENETMultiAssayExperiment,
-                        highThreshold = highThreshold,
-                        lowThreshold = lowThreshold,
+                        survivalGroupingCutoffs = survivalGroupingCutoffs,
+                        useJenksBreaks = useJenksBreaks,
+                        jenksBreaksGroupCount = jenksBreaksGroupCount,
                         createPlot = FALSE,
                         mc.cores = coreCount
                     )
@@ -631,8 +831,9 @@
                 geneIDdf = geneIDdf,
                 clinicalObject = clinicalObject,
                 TENETMultiAssayExperiment = TENETMultiAssayExperiment,
-                highThreshold = highThreshold,
-                lowThreshold = lowThreshold,
+                survivalGroupingCutoffs = survivalGroupingCutoffs,
+                useJenksBreaks = useJenksBreaks,
+                jenksBreaksGroupCount = jenksBreaksGroupCount,
                 createPlot = TRUE,
                 mc.cores = coreCount
             )
@@ -694,8 +895,9 @@
                         expressionOrMethylation = "Methylation",
                         clinicalObject = clinicalObject,
                         TENETMultiAssayExperiment = TENETMultiAssayExperiment,
-                        highThreshold = highThreshold,
-                        lowThreshold = lowThreshold,
+                        survivalGroupingCutoffs = survivalGroupingCutoffs,
+                        useJenksBreaks = useJenksBreaks,
+                        jenksBreaksGroupCount = jenksBreaksGroupCount,
                         createPlot = FALSE,
                         mc.cores = coreCount
                     )
@@ -718,8 +920,9 @@
                 expressionOrMethylation = "Methylation",
                 clinicalObject = clinicalObject,
                 TENETMultiAssayExperiment = TENETMultiAssayExperiment,
-                highThreshold = highThreshold,
-                lowThreshold = lowThreshold,
+                survivalGroupingCutoffs = survivalGroupingCutoffs,
+                useJenksBreaks = useJenksBreaks,
+                jenksBreaksGroupCount = jenksBreaksGroupCount,
                 createPlot = TRUE,
                 mc.cores = coreCount
             )
@@ -741,8 +944,9 @@
 #' specified by the user and generates survival plots and tables with statistics
 #' from survival analyses assessing the survival association of the expression
 #' level of each gene as well as the methylation level of each RE DNA
-#' methylation site linked to them, using percentile cutoffs as specified by the
-#' user for Kaplan-Meier analyses.
+#' methylation site linked to them, using groupings based on either percentile
+#' cutoffs or Jenks natural breaks as specified by the user, for Kaplan-Meier
+#' analyses.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
@@ -805,14 +1009,42 @@
 #' TENETMultiAssayExperiment under a column titled "time". Defaults to NA.
 #' @param highProportion Set a number ranging from 0 to 1, indicating the
 #' proportion of all samples to include in the high expression/methylation
-#' group for Kaplan-Meier survival analyses. Defaults to 0.5.
+#' group for Kaplan-Meier survival analyses. If values are specified for this
+#' and `lowProportion`, splitting the samples in this manner will supersede
+#' any arguments which are given for `survivalGroupingCutoffs`, `useJenksBreaks`
+#' and `jenksBreaksGroupCount`. Defaults to 0.5.
 #' @param lowProportion Set a number ranging from 0 to 1, indicating the
 #' proportion of all samples to include in the low expression/methylation
 #' group for Kaplan-Meier survival analyses. The total value of the
 #' highProportion and lowProportion arguments should not exceed 1. **Note:**
 #' If both this value and the highProportion value are set to 0.5, samples at
-#' exactly the 50th percentile will be assigned to the "Low" group.
+#' exactly the 50th percentile will be assigned to the "Low" group. If values
+#' are specified for this and `highProportion`, splitting the samples in this
+#' manner will supersede any arguments which are given for
+#' `survivalGroupingCutoffs`, `useJenksBreaks` and `jenksBreaksGroupCount`.
 #' Defaults to 0.5.
+#' @param survivalGroupingCutoffs Specify a data frame or matrix object with two
+#' columns and n rows, where n represents the number of groups the expression/
+#' methylation samples should be broken into. Values in the object should range
+#' from 0 to 1, reflecting the proportion of samples to include in each given
+#' group. Values in the first column should reflect the minimum proportion to
+#' include in each group, while values in the second column should reflect the
+#' max proportion (up to, but not including) for samples in the group. Row names
+#' can be given to the object to specify the names the user wishes to be used
+#' for the groups. If a valid data frame or matrix is given, it will supersede
+#' any arguments given for `useJenksBreaks` and `jenksBreaksGroupCount`.
+#' Defaults to NA (to not use custom grouping).
+#' @param useJenksBreaks Set to TRUE to automatically set cutoffs for the a
+#' number of groups as specified by the `jenksBreaksGroupCount` using Jenks
+#' natural breaks optimization. If this is TRUE, a value for the number of
+#' groups to be assessed must also be specified for the `jenksBreaksGroupCount`
+#' argument. Additionally, the `highProportion`, `lowProportion`, and
+#' `survivalGroupingCutoffs` arguments must be NA, as they supersede this
+#' analysis type. Defaults to FALSE to not use Jenks breaks.
+#' @param jenksBreaksGroupCount Set to a positive integer to specify the number
+#' of groups the survival data will be broken into, with cutoffs set between
+#' groups using Jenks natural breaks optimization. To use, `useJenksBreaks` must
+#' be TRUE. Defaults to NA to not use Jenks breaks.
 #' @param generatePlots Set to TRUE to create and save plots displaying the
 #' Kaplan-Meier survival results for the genes/TFs of interest, as well as the
 #' RE DNA methylation sites linked to them. Defaults to TRUE.
@@ -896,6 +1128,74 @@
 #'     generatePlots = FALSE,
 #'     coreCount = 8
 #' )
+#'
+#' ## This example uses the example MultiAssayExperiment provided in the
+#' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
+#' ## survival analyses for the top 10 genes/TFs, by number of linked hyper- or
+#' ## hypomethylated RE DNA methylation sites, as well as for all unique RE DNA
+#' ## methylation sites linked to those 10 genes/TFs. The vital status and
+#' ## survival time of patients will be taken from the "vital_status" and "time"
+#' ## columns present in the colData of the example MultiAssayExperiment. Gene
+#' ## names will be retrieved from the rowRanges of the 'expression'
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. For
+#' ## survival analyses, custom cutoffs representing quartiles will be used, and
+#' ## Kaplan-Meier plots will be saved for the genes and RE DNA methylation
+#' ## sites, and the analysis will be performed using one CPU core.
+#'
+#' ## Load the example TENET MultiAssayExperiment object
+#' ## from the TENET.ExperimentHub package
+#' exampleTENETMultiAssayExperiment <-
+#'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
+#'
+#' ## Create a custom cutoffsMatrix which will split the samples into quartiles
+#' ## for the purposes of the survival analyses and will also define custom
+#' ## names for these groups:
+#' cutoffMatrix <- data.frame(
+#'     "Low" = c(0, (1 / 4), (1 / 2), (3 / 4)),
+#'     "High" = c((1 / 4), (1 / 2), (3 / 4), 1)
+#' )
+#' rownames(cutoffMatrix) <- c(
+#'     "GroupOne",
+#'     "GroupTwo",
+#'     "GroupThree",
+#'     "GroupFour"
+#' )
+#'
+#' ## Use the example dataset and cutoffMatrix to do the survival analysis
+#' returnValue <- step7TopGenesSurvival(
+#'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+#'     highProportion = NA,
+#'     lowProportion = NA,
+#'     survivalGroupingCutoffs = cutoffMatrix
+#' )
+#'
+#' ## This final example uses the example MultiAssayExperiment provided in the
+#' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
+#' ## survival analyses for the top 10 genes/TFs, by number of linked hyper- or
+#' ## hypomethylated RE DNA methylation sites, as well as for all unique RE DNA
+#' ## methylation sites linked to those 10 genes/TFs. The vital status and
+#' ## survival time of patients will be taken from the "vital_status" and "time"
+#' ## columns present in the colData of the example MultiAssayExperiment. Gene
+#' ## names will be retrieved from the rowRanges of the 'expression'
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. For
+#' ## survival analyses, Jenks natural breaks optimization will be used to
+#' ## determine cutoffs for 3 groups in the survival analysis.
+#' ## Kaplan-Meier plots will be saved for the genes and RE DNA methylation
+#' ## sites, and the analysis will be performed using one CPU core.
+#'
+#' ## Load the example TENET MultiAssayExperiment object
+#' ## from the TENET.ExperimentHub package
+#' exampleTENETMultiAssayExperiment <-
+#'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
+#'
+#' ## Use the example dataset to do the survival analysis
+#' returnValue <- step7TopGenesSurvival(
+#'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
+#'     highProportion = NA,
+#'     lowProportion = NA,
+#'     useJenksBreaks = TRUE,
+#'     jenksBreaksGroupCount = 3
+#' )
 step7TopGenesSurvival <- function(
     TENETMultiAssayExperiment,
     geneAnnotationDataset = NA,
@@ -906,6 +1206,9 @@ step7TopGenesSurvival <- function(
     survivalTimeData = NA,
     highProportion = 0.5,
     lowProportion = 0.5,
+    survivalGroupingCutoffs = NA,
+    useJenksBreaks = FALSE,
+    jenksBreaksGroupCount = NA,
     generatePlots = TRUE,
     coreCount = 1) {
     ## Validate the analysis types and get a vector of the ones selected
@@ -919,22 +1222,245 @@ step7TopGenesSurvival <- function(
         needGeneName = is.na(geneAnnotationDataset)
     )
 
-    ## Check for nonsensical high/lowProportion values which would cause invalid
-    ## results
-    if (!is.numeric(highProportion) || !is.numeric(lowProportion)) {
-        .stopNoCall(
-            "Invalid highProportion and/or lowProportion specified. ",
-            "Both must be numeric values between 0 and 1."
+    ## Validate settings of the highProportion, lowProportion,
+    ## survivalGroupingCutoffs, useJenksBreaks, and jenksBreaksGroupCount
+    ## values.
+    ## We want to use the following hierarchy: If the user has specified valid
+    ## highProportion and lowProportion values, use them regardless of the other
+    ## settings. If they aren't set (are NA), first check to see if the user
+    ## has provided a valid survivalGroupingCutoffs dataset. If that hasn't been
+    ## provided, then check if the user has specified valid useJenksBreaks
+    ## and jenksBreaksGroupCount values.
+
+    ## First let's check if any of the high/lowProportion values are specified
+    if (!is.na(highProportion) || !is.na(lowProportion)) {
+        ## If only one is NA, return an error
+        if (is.na(highProportion) || is.na(lowProportion)) {
+            .stopNoCall(
+                "One of the highProportion or lowProportion arguments has ",
+                "been set, but the other has not been set. Please ensure ",
+                "that both arguments are set as a number ranging from 0 to 1, ",
+                "with their total not exceeding 1, or that both are set to NA ",
+                "while valid settings are provided for the ",
+                "survivalGroupingCutoffs, useJenksBreaks, and ",
+                "jenksBreaksGroupCount arguments."
+            )
+        }
+
+        ## Check for nonsensical high/lowProportion values which would cause
+        ## invalid results
+        if (!is.numeric(highProportion) || !is.numeric(lowProportion)) {
+            .stopNoCall(
+                "Invalid highProportion and/or lowProportion specified. ",
+                "Both must be numeric values between 0 and 1."
+            )
+        }
+
+        if ((highProportion + lowProportion) > 1 ||
+            highProportion <= 0 || lowProportion <= 0
+        ) {
+            .stopNoCall(
+                "Invalid highProportion and/or lowProportion specified. Both ",
+                "must be positive, and their sum may not be greater than 1."
+            )
+        }
+
+        ## If the values look valid, format a survivalGroupingCutoffs matrix for
+        ## the cutoffs specified, since they work as if the user has specified
+        ## two groups with the specified cutoffs in a survivalGroupingCutoffs
+        ## matrix/data frame
+        survivalGroupingCutoffs <- data.frame(
+            "min" = c(0, highProportion),
+            "max" = c(lowProportion, 1)
         )
+        rownames(survivalGroupingCutoffs) <- c("low", "high")
     }
 
-    if ((highProportion + lowProportion) > 1 ||
-        highProportion <= 0 || lowProportion <= 0
-    ) {
-        .stopNoCall(
-            "Invalid highProportion and/or lowProportion specified. ",
-            "Both must be positive, and their sum may not be greater than 1."
-        )
+    ## Validate the survivalGroupingCutoffs:
+    if (!.isSingleNA(survivalGroupingCutoffs)) {
+        ## First ensure that if supplied, survivalGroupingCutoffs is either a
+        ## matrix or data frame:
+        if (
+            !inherits(survivalGroupingCutoffs, "matrix") &
+                !inherits(survivalGroupingCutoffs, "data.frame")
+        ) {
+            .stopNoCall(
+                "The object given as the survivalGroupingCutoffs argument ",
+                "must be either a matrix or data frame."
+            )
+        }
+
+        ## Next, ensure the matrix/data frame is properly formatted with two
+        ## columns:
+        if (!ncol(survivalGroupingCutoffs) == 2) {
+            .stopNoCall(
+                "The survivalGroupingCutoffs object must have two columns, ",
+                "the first with the minimum proportion cutoff for each ",
+                "group in the rows, and the second with the maximum ",
+                "proportion cutoff."
+            )
+        }
+
+        ## Also ensure there are at least two rows, representing two groups, in
+        ## the object
+        if (nrow(survivalGroupingCutoffs) < 2) {
+            .stopNoCall(
+                "The survivalGroupingCutoffs object must have at least two ",
+                "rows, representing at least two groups to compare ",
+                "in the survival analyses."
+            )
+        }
+
+        ## Make sure that the values in the specified survivalGroupingCutoffs
+        ## are between 0 and 1
+        if (min(survivalGroupingCutoffs) < 0 ||
+            max(survivalGroupingCutoffs) > 1
+        ) {
+            .stopNoCall(
+                "All values within the survivalGroupingCutoffs object must be ",
+                "between 0 and 1, representing the proportion cutoffs for the ",
+                "groups in the rows."
+            )
+        }
+
+        ## Check to make sure the values in the second column are larger than
+        ## those in the first column
+        if (!all(
+            (survivalGroupingCutoffs[, 2] - survivalGroupingCutoffs[, 1]) > 0
+        )) {
+            .stopNoCall(
+                "Values in the second column of the survivalGroupingCutoffs ",
+                "object are not all larger than the respective value per row ",
+                "in the first column. Since values in the second column ",
+                "represent the maximum proportion cutoff for each group (in ",
+                "the rows), they should be larger than the values in the ",
+                "first column."
+            )
+        }
+
+        ## Next, ensure that the groups in the survivalGroupingCutoffs are
+        ## ordered by increasing value of the minimum proportional cutoffs in
+        ## the first column
+        survivalGroupingCutoffs <- survivalGroupingCutoffs[
+            order(survivalGroupingCutoffs[, 1], decreasing = FALSE),
+        ]
+
+        ## Then check that the minimum value of every row past the first in the
+        ## dataset is equal or larger than the max value of the previous column.
+        ## If the value is not equal to or larger for every row past the first,
+        ## issue an error since it implies there are overlaps in the groups
+        ## specified. If they are not equal, prepare a warning noting that there
+        ## might be gaps between the groups, causing a potential loss of samples
+        rowMinEqualOrLargerThanPrevRowMax <- NULL
+        rowMinEqualToPrevRowMax <- NULL
+
+        for (i in seq_len(nrow(survivalGroupingCutoffs))) {
+            ## If it's the first row, return TRUE, since there is no
+            ## previous row to compare it to:
+            if (i == 1) {
+                rowMinLargerThanPrevRowMax <- TRUE
+                rowMinEqualToPrevRowMax <- TRUE
+            } else {
+                ## Check that the min value in column 1 of the given row is
+                ## equal or larger than the max value in column 2 from the
+                ## previous row
+                rowMinLargerThanPrevRowMax <- c(
+                    rowMinLargerThanPrevRowMax,
+                    (survivalGroupingCutoffs[i, 1] >=
+                        survivalGroupingCutoffs[(i - 1), 2])
+                )
+
+                ## Also check that the min value in column 1 of the given row is
+                ## equal to the max value in column 2 from the previous row
+                rowMinEqualToPrevRowMax <- c(
+                    rowMinEqualToPrevRowMax,
+                    (survivalGroupingCutoffs[i, 1] ==
+                        survivalGroupingCutoffs[(i - 1), 2])
+                )
+            }
+        }
+
+        ## Now, check that all the values in rowMinEqualOrLargerThanPrevRowMax.
+        ## If they are not, it implies there is overlap in the group.
+        if (!all(rowMinLargerThanPrevRowMax)) {
+            .stopNoCall(
+                "The proportional values that define each group appear to ",
+                "overlap. Please check the values in survivalGroupingCutoffs ",
+                "and ensure that the maximum values that define each group in ",
+                "column 2 are equal to, or less than, the minimum value of ",
+                "the next group."
+            )
+        }
+
+        ## Now check for potential gaps in the group - if any are detected,
+        ## alert the user with a warning that there may be gaps.
+        ## This is a warning because the user may want gaps. For example, they
+        ## may want to compare the smallest third vs. the largest third.
+        if (
+            !all(rowMinEqualToPrevRowMax) |
+                min(survivalGroupingCutoffs) != 0 |
+                max(survivalGroupingCutoffs) != 1
+        ) {
+            .warningNoCall(
+                "There are gaps in the proportional values which define ",
+                "each group in the survivalGroupingCutoffs object and some ",
+                "may be omitted from the survival analysis. If this was ",
+                "unintended, please check the values in the ",
+                "survivalGroupingCutoffs object and ensure there are no gaps ",
+                "between the maximum cutoff of the previous group in the ",
+                "second column and the minimum cutoff of the next group in ",
+                "the first column, the lowest minimum cutoff is 0, and the ",
+                "highest maximum cutoff is 1."
+            )
+        }
+
+        ## Finally, if the user has also set useJenksBreaks to TRUE and/or set
+        ## a jenksBreaksGroupCount value, warn them that Jenks breaks won't be
+        ## used since a survivalGroupingCutoff object has been specified:
+        if (useJenksBreaks || !is.na(jenksBreaksGroupCount)) {
+            .warningNoCall(
+                "Although useJenksBreaks has been set to TRUE and/or a ",
+                "jenksBreaksGroupCount has been set, these values will not be ",
+                "utilized as a valid survivalGroupingCutoffs object has been ",
+                "supplied to define the groups for survival analysis. If you ",
+                "would like to use Jenks natural breaks classification to set ",
+                "groups instead, please rerun the analysis and set ",
+                "survivalGroupingCutoffs to NA or leave the argument undefined."
+            )
+
+            ## Set useJenksBreaks to be FALSE and jenksBreaksGroupCount to be NA
+            ## to ensure they aren't used later in the function
+            useJenksBreaks <- FALSE
+            jenksBreaksGroupCount <- NA
+        }
+    }
+
+    ## Next if supplied, ensure the jenksBreaksGroupCount is a positive whole
+    ## number
+    if (!is.na(jenksBreaksGroupCount)) {
+        ## First, check that the value is a number to begin with:
+        if (!is.numeric(jenksBreaksGroupCount)) {
+            .stopNoCall(
+                "jenksBreaksGroupCount is not a number. This argument must be ",
+                "a positive whole number."
+            )
+        }
+
+        ## Next, check that the value is positive:
+        if (jenksBreaksGroupCount <= 0) {
+            .stopNoCall(
+                "jenksBreaksGroupCount is not positive. This argument must be ",
+                "a positive whole number."
+            )
+        }
+
+        ## Finally, check that the value is a whole number:
+        if (jenksBreaksGroupCount %% 1 != 0) {
+            .stopNoCall(
+                "jenksBreaksGroupCount is not a whole number. This argument ",
+                "must be a positive whole number."
+            )
+        }
     }
 
     ## Process the status data of the samples if vitalStatusData is not NA.
@@ -963,10 +1489,6 @@ step7TopGenesSurvival <- function(
     geneIDdf <- .getGeneIDsAndNames(
         TENETMultiAssayExperiment, geneAnnotationDataset
     )
-
-    ## Set thresholds based on specified fractions.
-    ## 1/3 is specified, the top 1/3 of the samples should be returned
-    highThresh <- 1 - highProportion
 
     ## Get the names of the control and case samples in the
     ## methylation data first
@@ -1084,11 +1606,12 @@ step7TopGenesSurvival <- function(
                         clinicalObject = clinicalDF,
                         TENETMultiAssayExperiment = TENETMultiAssayExperiment,
                         topGeneNumber = topGeneNumber,
-                        highThreshold = highThresh,
-                        lowThreshold = lowProportion,
                         geneOrTF = geneOrTF,
                         genesOrMethSites = genesOrMethSites,
                         statsOrPlots = statsOrPlots,
+                        survivalGroupingCutoffs = survivalGroupingCutoffs,
+                        useJenksBreaks = useJenksBreaks,
+                        jenksBreaksGroupCount = jenksBreaksGroupCount,
                         coreCount = coreCount
                     )
                 }

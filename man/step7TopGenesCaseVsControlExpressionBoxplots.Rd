@@ -2,7 +2,7 @@
 % Please edit documentation in R/step7TopGenesCaseVsControlExpressionBoxplots.R
 \name{step7TopGenesCaseVsControlExpressionBoxplots}
 \alias{step7TopGenesCaseVsControlExpressionBoxplots}
-\title{Create boxplots comparing the expression level of the top
+\title{Generate boxplots or violin plots comparing the expression level of the top
 genes/transcription factors in case and control samples}
 \usage{
 step7TopGenesCaseVsControlExpressionBoxplots(
@@ -11,6 +11,7 @@ step7TopGenesCaseVsControlExpressionBoxplots(
   hypermethGplusAnalysis = TRUE,
   hypomethGplusAnalysis = TRUE,
   topGeneNumber = 10,
+  violinPlots = FALSE,
   coreCount = 1
 )
 }
@@ -32,17 +33,20 @@ Specify NA to use the names for genes listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to create expression boxplots for
-the top genes/TFs with the most hypermethylated RE DNA methylation sites
-with G+ links. Defaults to TRUE.}
+\item{hypermethGplusAnalysis}{Set to TRUE to create expression boxplots or
+violin plots for the top genes/TFs with the most hypermethylated RE DNA
+methylation sites with G+ links. Defaults to TRUE.}
 
-\item{hypomethGplusAnalysis}{Set to TRUE to create expresion boxplots for
-the top genes/TFs with the most hypomethylated RE DNA methylation sites with
-G+ links. Defaults to TRUE.}
+\item{hypomethGplusAnalysis}{Set to TRUE to create expression boxplots or
+violin plots for the top genes/TFs with the most hypomethylated RE DNA
+methylation sites with G+ links. Defaults to TRUE.}
 
 \item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
 linked RE DNA methylation sites of a given analysis type, for which to
-generate expression boxplots. Defaults to 10.}
+generate expression boxplots or violin plots. Defaults to 10.}
+
+\item{violinPlots}{Set to TRUE to generate violin plots instead of boxplots.
+Defaults to FALSE.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mcmapply. See
 \code{?parallel::mcmapply} for more details. Defaults to 1.}
@@ -53,24 +57,24 @@ TENETMultiAssayExperiment argument with an additional list of information
 named 'step7TopGenesCaseVsControlExpressionBoxplots' in its metadata
 with the output of this function. This list is subdivided into
 hypermethGplus or hypomethGplus results as selected by the user, which are
-further subdivided into lists with plots for the top overall genes, and for
-top TF genes only. These contain boxplots showing the expression of the genes
-of interest in the case and control samples, with Student's t-test p-values
-and the name and ID of the gene in the title.
+further subdivided into lists for the top overall genes and for
+top TF genes only. These contain boxplots or violin plots showing the
+expression of the genes of interest in the case and control samples, with
+Student's t-test p-values and the name and ID of the gene in the title.
 }
 \description{
 This function takes the top genes/transcription factors (TFs) for each
 analysis type by number of linked RE DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
-specified by the user, and generates boxplots displaying the expression
-level of each of these genes in the case compared to control samples, along
-with the results of a Student's t-test comparing the expression level
-between these two groups.
+specified by the user, and generates boxplots or violin plots displaying the
+expression level of each of these genes in the case compared to control
+samples, along with the results of a Student's t-test comparing the
+expression level between these two groups.
 }
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create expression boxplots in case vs.
+## TENET.ExperimentHub package to create boxplots of expression in case vs.
 ## control samples for the top 10 genes/TFs, by number of linked hyper- or
 ## hypomethylated RE DNA methylation sites. Gene names will be retrieved
 ## from the rowRanges of the 'expression' SummarizedExperiment object in the
@@ -82,13 +86,13 @@ between these two groups.
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to create expression case vs. control boxplots
+## Use the example dataset to create case vs. control expression boxplots
 returnValue <- step7TopGenesCaseVsControlExpressionBoxplots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create expression boxplots in case vs.
+## TENET.ExperimentHub package to create boxplots of expression in case vs.
 ## control samples for the top 5 genes/TFs, by number of linked
 ## hypomethylated RE DNA methylation sites only. Gene names will be
 ## retrieved from the rowRanges of the 'expression' SummarizedExperiment
@@ -100,7 +104,7 @@ returnValue <- step7TopGenesCaseVsControlExpressionBoxplots(
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to create expression case vs. control boxplots
+## Use the example dataset to create case vs. control expression boxplots
 returnValue <- step7TopGenesCaseVsControlExpressionBoxplots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     hypermethGplusAnalysis = FALSE,
