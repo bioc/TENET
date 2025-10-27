@@ -15,9 +15,9 @@ step7StatesForLinks(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the \code{step5OptimizeLinks} functions in
-its metadata.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step2GetDifferentiallyMethylatedSites} and
+\code{step5OptimizeLinks} functions.}
 
 \item{hypermethGplusAnalysis}{Set to TRUE to analyze which case samples
 harbor each hypermethylated G+ RE DNA methylation site-gene link. Defaults to
@@ -32,33 +32,31 @@ TRUE.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7StatesForLinks' in its metadata with the output of this
-function. This list is subdivided into hypermethGplus or hypomethGplus
-results as selected by the user, which contain data frames for each of the
-specified analysis types with case samples in the columns and each RE DNA
-methylation site-gene link for that analysis type in the rows, with a 1
-indicating the sample is positive for that link and a 0 indicating it is not.
-NA values are shown for samples that lack methylation data for the site or
-expression data for the gene.
+TENETMultiAssayExperiment argument with an additional list
+named 'step7StatesForLinks' in its metadata containing the output of this
+function. This list contains \code{hypermethGplus} and/or \code{hypomethGplus} data
+frames, as selected by the user, which contain columns for each case sample
+and rows for each RE DNA methylation site-gene link for that analysis type.
+A 1 at the intersection of a row and column indicates the sample harbors that
+link and a 0 indicates it does not; an NA value indicates that the sample
+lacks methylation data for the site or expression data for the gene.
 }
 \description{
-This function generates data frames with information for each of the case
-samples and each RE DNA methylation site-gene link from both of the
-hyper- or hypomethylated G+ analysis quadrants, as selected by the user, on
-if a given sample is said to "harbor" each link, depending on if the
-methylation of the given sample for the RE DNA methylation site in the link
-is above or below the hyper- or hypomethylation cutoff defined in the
+This function generates data frames indicating whether each of the case
+samples harbors each RE DNA methylation site-gene link from the hyper- and/or
+hypomethylated G+ analysis quadrants. A given sample harbors a link if the
+methylation of the linked RE DNA methylation site in that sample is above or
+below the hyper- or hypomethylation cutoff defined in the
 \code{step2GetDifferentiallyMethylatedSites} function and the expression of the
-gene in the link is significantly greater than, or less than, the mean
-expression in the control samples, as determined by a Bonferroni-corrected
-1-sided t-test with a p-value threshold of 0.05.
+linked gene in that sample is significantly greater than, or less than, the
+mean expression in the control samples, as determined by a
+Bonferroni-corrected 1-sided t-test with a p-value threshold of 0.05.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to create data frames for link states between
-## genes and both hyper- and hypomethylated G+ RE DNA methylation sites. The
+## genes and hyper- and hypomethylated G+ RE DNA methylation sites. The
 ## analysis will be performed using one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
@@ -66,22 +64,20 @@ expression in the control samples, as determined by a Bonferroni-corrected
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the states for links analysis
+## Use the example dataset to perform the analysis
 returnValue <- step7StatesForLinks(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create data frames for link states between
-## genes and only hypomethylated G+ RE DNA methylation sites. The analysis
-## will be performed using 8 CPU cores.
+## This example is similar, but it analyzes only hypomethylated G+ RE DNA
+## methylation sites, and the analysis is performed using 8 CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the states for links analysis
+## Use the example dataset to perform the analysis
 returnValue <- step7StatesForLinks(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     hypermethGplusAnalysis = FALSE,

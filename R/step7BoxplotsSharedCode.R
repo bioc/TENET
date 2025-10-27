@@ -4,12 +4,13 @@
 ## sites, will plot a boxplot or violin plot showing the expression/methylation
 ## level of that gene/RE DNA methylation site in the case vs control samples
 .quadrantBoxplotFunction <- function(
-    geneOrMethSiteID,
-    expOrMet,
-    expOrMetData,
-    geneIDNameDF = NA,
-    groupInfo,
-    violinPlot = TRUE) {
+  geneOrMethSiteID,
+  expOrMet,
+  expOrMetData,
+  geneIDNameDF = NA,
+  groupInfo,
+  violinPlot = TRUE
+) {
     ## Convert the gene ID into the gene name, if genes are being analyzed,
     ## and set the plot title and result name accordingly
     if (expOrMet == "expression") {

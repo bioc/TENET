@@ -1,25 +1,25 @@
-#' Create bed-formatted interact files which can be loaded on the UCSC
+#' Create BED-formatted interact files which can be loaded on the UCSC
 #' Genome Browser to display links between top genes and transcription factors
 #' and their linked RE DNA methylation sites
 #'
-#' This function takes the top genes/transcription factors (TFs) by number of
-#' linked RE DNA methylation sites identified by the
-#' `step6DNAMethylationSitesPerGeneTabulation` function, up to the number
-#' specified by the user, and generates bed-formatted interact files (see
+#' This function takes the top genes and transcription factors (TFs) by number
+#' of linked RE DNA methylation sites identified by the
+#' `step6DNAMethylationSitesPerGeneTabulation` function in the hyper- and/or
+#' hypomethylated G+ analysis quadrants, up to the number specified by the user,
+#' and generates BED-formatted interact files (see
 #' <https://genome.ucsc.edu/goldenPath/help/interact.html>) that can be
 #' uploaded to the UCSC Genome Browser (<https://genome.ucsc.edu>) to visualize
-#' the links between each of the top specified genes/TFs and the RE DNA
-#' methylation sites linked to them for both of the hyper- or hypomethylated G+
-#' analysis quadrants, as selected by the user.
+#' the links between each of these genes and the RE DNA methylation sites linked
+#' to them for the given analysis type.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
-#' one created by the TCGADownloader function. This MultiAssayExperiment object
-#' should also contain the results from the `step5OptimizeLinks` and
-#' `step6DNAMethylationSitesPerGeneTabulation` functions in its metadata.
+#' one created by the TCGADownloader function. The object's metadata must
+#' contain the results from the `step5OptimizeLinks` and
+#' `step6DNAMethylationSitesPerGeneTabulation` functions.
 #' @param outputDirectory Specify the path to the output directory in which to
-#' save the .bed files created by this function. The directory will be created
-#' if it does not exist.
+#' save the `.inter.bed` files created by this function. It will be created if
+#' necessary.
 #' @param geneAnnotationDataset Specify a gene annotation dataset which is
 #' used to identify names for genes by their Ensembl IDs. The argument must be
 #' either a GRanges object (such as one imported via `rtracklayer::import`) or a
@@ -27,11 +27,9 @@
 #' supported. Other annotation datasets may work, but have not been tested.
 #' See the "Input data" section of the vignette for information on the required
 #' dataset format.
-#' Specify NA to use the names for genes listed in the "geneName" column of the
+#' Specify NA to use the gene names listed in the "geneName" column of the
 #' elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 #' object within the TENETMultiAssayExperiment object. Defaults to NA.
-#'
-#'
 #' @param DNAMethylationArray Specify the name of a DNA methylation probe array
 #' supported by the sesameData package (see
 #' `?sesameData::sesameData_getManifestGRanges`). If an array is specified, RE
@@ -43,32 +41,32 @@
 #' DNA methylation sites with locations listed in the rowRanges of the
 #' "methylation" SummarizedExperiment object are used. Defaults to NA.
 #' @param hypermethGplusAnalysis Set to TRUE to create interact files showing
-#' links between the top genes/TFs by most RE hypermethylated RE DNA
-#' methylation sites with G+ links, and these linked RE DNA methylation sites.
+#' links between the top genes and TFs by most RE hypermethylated RE DNA
+#' methylation sites with G+ links and their linked RE DNA methylation sites.
 #' Defaults to TRUE.
 #' @param hypomethGplusAnalysis Set to TRUE to create interact files showing
-#' links between the top genes/TFs by most hypomethylated RE DNA methylation
-#' sites with G+ links, and these linked RE DNA methylation sites. Defaults to
+#' links between the top genes and TFs by most hypomethylated RE DNA methylation
+#' sites with G+ links and their linked RE DNA methylation sites. Defaults to
 #' TRUE.
-#' @param topGeneNumber Specify the number of top genes/TFs, based on the most
-#' linked RE DNA methylation sites of a given analysis type, for which to
+#' @param topGeneNumber Specify the number of top genes and TFs, based on the
+#' most linked RE DNA methylation sites of a given analysis type, for which to
 #' generate interact files showing the links between those genes and each of
 #' their linked RE DNA methylation sites. Defaults to 10.
-#' @return Outputs .bed formatted interact files to upload to the UCSC Genome
+#' @return Outputs BED-formatted interact files to upload to the UCSC Genome
 #' Browser to the specified output directory. These files display the
 #' interactions between the top genes/TFs and their linked RE DNA methylation
 #' sites for the given analysis types. Returns a list of lists named after each
-#' selected analysis type, each containing the file paths to the created .bed
-#' files for top genes and top TFs for that analysis type.
+#' selected analysis type, each containing the file paths to the created
+#' `.inter.bed` files for top genes and top TFs for that analysis type.
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to create UCSC Genome Browser interact files
-#' ## for the top 10 genes/TFs by number of linked hyper- or hypomethylated RE
-#' ## DNA methylation sites. The interact files for the top genes/TFs will be
-#' ## saved in the user's working directory. Gene names and locations, and the
-#' ## locations of RE DNA methylation sites, will be retrieved from the
+#' ## for the top 10 genes and TFs by number of linked hyper- and hypomethylated
+#' ## RE DNA methylation sites. The interact files for the top genes and TFs
+#' ## will be saved in the user's working directory. Gene names and locations,
+#' ## and the locations of RE DNA methylation sites, will be retrieved from the
 #' ## rowRanges of the 'expression' and 'methylation' SummarizedExperiment
 #' ## objects in the example MultiAssayExperiment.
 #'
@@ -77,34 +75,27 @@
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Use the example dataset to create and save the UCSC Genome Browser
-#' ## interact files
+#' ## Use the example dataset to create the UCSC Genome Browser interact files
 #' filePaths <- step7TopGenesUCSCBedFiles(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     outputDirectory = "."
 #' )
 #'
-#' ## Get the path to the bed file for the top TFs by number of
+#' ## Get the path to the .inter.bed file for the top TFs by number of
 #' ## hypomethylated G+ RE DNA methylation sites
 #' filePaths$hypoGplus$topTFs
 #'
-#' ## This example uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package to create UCSC Genome Browser interact files
-#' ## for the top 5 genes/TFs by number of linked hypomethylated RE DNA
-#' ## methylation sites only. The interact files for the top genes/TFs will be
-#' ## saved in the user's working directory. Gene names and locations will be
-#' ## retrieved from the rowRanges of the 'expression' and 'methylation'
-#' ## SummarizedExperiment objects in the example MultiAssayExperiment. RE DNA
-#' ## methylation site IDs and locations will be retrieved from the HM450 array
-#' ## via the sesameData package.
+#' ## This example is similar, but creates UCSC Genome Browser interact files
+#' ## for only the top 5 genes and TFs by number of linked hypomethylated RE DNA
+#' ## methylation sites, and RE DNA methylation site IDs and locations are
+#' ## retrieved from the HM450 array via the sesameData package.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Use the example dataset to create and save the UCSC Genome Browser
-#' ## interact files
+#' ## Use the example dataset to create the UCSC Genome Browser interact files
 #' filePaths <- step7TopGenesUCSCBedFiles(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     outputDirectory = ".",
@@ -113,20 +104,21 @@
 #'     topGeneNumber = 5
 #' )
 #'
-#' ## Get the path to the bed file for the top TFs by number of
+#' ## Get the path to the .inter.bed file for the top TFs by number of
 #' ## hypomethylated G+ RE DNA methylation sites.
 #' ## Note: Since we performed analyses only using TFs in the step 3 function,
-#' ## the top genes are all TFs, so topTFs will be NA here, and topGenes
-#' ## should be used instead.
+#' ## the top genes are all TFs, so topTFs will be NA and topGenes must be used
+#' ## instead.
 #' filePaths$hypoGplus$topGenes
 step7TopGenesUCSCBedFiles <- function(
-    TENETMultiAssayExperiment,
-    outputDirectory,
-    geneAnnotationDataset = NA,
-    DNAMethylationArray = NA,
-    hypermethGplusAnalysis = TRUE,
-    hypomethGplusAnalysis = TRUE,
-    topGeneNumber = 10) {
+  TENETMultiAssayExperiment,
+  outputDirectory,
+  geneAnnotationDataset = NA,
+  DNAMethylationArray = NA,
+  hypermethGplusAnalysis = TRUE,
+  hypomethGplusAnalysis = TRUE,
+  topGeneNumber = 10
+) {
     ## Validate the analysis types and get a vector of the ones selected
     analysisTypes <- .validateAnalysisTypes(
         hypermethGplusAnalysis, hypomethGplusAnalysis
@@ -135,7 +127,7 @@ step7TopGenesUCSCBedFiles <- function(
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(
         TENETMultiAssayExperiment,
-        needGeneName = is.na(geneAnnotationDataset)
+        needGeneNames = is.na(geneAnnotationDataset)
     )
 
     if (missing(outputDirectory)) {

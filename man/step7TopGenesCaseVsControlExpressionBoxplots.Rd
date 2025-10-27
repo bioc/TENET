@@ -3,7 +3,7 @@
 \name{step7TopGenesCaseVsControlExpressionBoxplots}
 \alias{step7TopGenesCaseVsControlExpressionBoxplots}
 \title{Generate boxplots or violin plots comparing the expression level of the top
-genes/transcription factors in case and control samples}
+genes and transcription factors in case and control samples}
 \usage{
 step7TopGenesCaseVsControlExpressionBoxplots(
   TENETMultiAssayExperiment,
@@ -18,9 +18,9 @@ step7TopGenesCaseVsControlExpressionBoxplots(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the \code{step5OptimizeLinks} and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in its metadata.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step5OptimizeLinks} and
+\code{step6DNAMethylationSitesPerGeneTabulation} functions.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -29,20 +29,20 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to create expression boxplots or
-violin plots for the top genes/TFs with the most hypermethylated RE DNA
-methylation sites with G+ links. Defaults to TRUE.}
+\item{hypermethGplusAnalysis}{Set to TRUE to create plots for the top genes
+and TFs with the most hypermethylated RE DNA methylation sites with G+ links.
+Defaults to TRUE.}
 
 \item{hypomethGplusAnalysis}{Set to TRUE to create expression boxplots or
-violin plots for the top genes/TFs with the most hypomethylated RE DNA
+violin plots for the top genes and TFs with the most hypomethylated RE DNA
 methylation sites with G+ links. Defaults to TRUE.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
-linked RE DNA methylation sites of a given analysis type, for which to
+\item{topGeneNumber}{Specify the number of top genes and TFs, based on the
+most linked RE DNA methylation sites of a given analysis type, for which to
 generate expression boxplots or violin plots. Defaults to 10.}
 
 \item{violinPlots}{Set to TRUE to generate violin plots instead of boxplots.
@@ -53,17 +53,17 @@ Defaults to FALSE.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesCaseVsControlExpressionBoxplots' in its metadata
-with the output of this function. This list is subdivided into
-hypermethGplus or hypomethGplus results as selected by the user, which are
-further subdivided into lists for the top overall genes and for
-top TF genes only. These contain boxplots or violin plots showing the
-expression of the genes of interest in the case and control samples, with
-Student's t-test p-values and the name and ID of the gene in the title.
+TENETMultiAssayExperiment argument with an additional list named
+'step7TopGenesCaseVsControlExpressionBoxplots' in its metadata containing
+the output of this function. This list contains \code{hypermethGplus} and/or
+\code{hypomethGplus} lists, as selected by the user, which contain lists for the
+top overall genes and the top TF genes. These lists contain boxplots or
+violin plots showing the expression of the gene of interest in the case and
+control samples, with Student's t-test p-values and the name and ID of the
+gene in the title.
 }
 \description{
-This function takes the top genes/transcription factors (TFs) for each
+This function takes the top genes and transcription factors (TFs) for each
 analysis type by number of linked RE DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
 specified by the user, and generates boxplots or violin plots displaying the
@@ -72,39 +72,35 @@ samples, along with the results of a Student's t-test comparing the
 expression level between these two groups.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create boxplots of expression in case vs.
-## control samples for the top 10 genes/TFs, by number of linked hyper- or
-## hypomethylated RE DNA methylation sites. Gene names will be retrieved
-## from the rowRanges of the 'expression' SummarizedExperiment object in the
-## example MultiAssayExperiment. The analysis will be performed using one
-## CPU core.
+## TENET.ExperimentHub package to create boxplots comparing expression in
+## case and control samples for the top 10 genes and TFs by number of linked
+## hyper- and hypomethylated RE DNA methylation sites. Gene names will be
+## retrieved from the rowRanges of the 'expression' SummarizedExperiment
+## object in the example MultiAssayExperiment. The analysis will be performed
+## using one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to create case vs. control expression boxplots
+## Use the example dataset to create the boxplots
 returnValue <- step7TopGenesCaseVsControlExpressionBoxplots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create boxplots of expression in case vs.
-## control samples for the top 5 genes/TFs, by number of linked
-## hypomethylated RE DNA methylation sites only. Gene names will be
-## retrieved from the rowRanges of the 'expression' SummarizedExperiment
-## object in the example MultiAssayExperiment. The analysis will be
-## performed using 8 CPU cores.
+## This example is similar, but it only creates boxplots for the top 5 genes
+## and TFs by number of linked hypomethylated RE DNA methylation sites, and
+## the analysis is performed using 8 CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to create case vs. control expression boxplots
+## Use the example dataset to create the boxplots
 returnValue <- step7TopGenesCaseVsControlExpressionBoxplots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     hypermethGplusAnalysis = FALSE,

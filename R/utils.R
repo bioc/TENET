@@ -1,37 +1,73 @@
-## Internal function to validate an external bed file directory and return a
-## list of the files in it
-.listExtBedFiles <- function(extDir, paramName, paramDescription) {
-    ## Ensure that the supplied directory exists. If it does, load any .bed,
-    ## .narrowPeak, .broadPeak, and/or .gappedPeak files inside.
-    ## Otherwise, return an error.
-    if (!dir.exists(extDir)) {
+## Internal function to validate a list of external bed files and/or directories
+## and return a list of the bed files passed directly or found in the provided
+## directories
+.listExtBedFiles <- function(extPaths, paramName, paramDescription) {
+    ## Pattern to match valid file extensions
+    filePattern <- "\\.(bed|(narrow|broad|gapped)Peak)(\\.gz|bz2|xz)?$"
+
+    ## file.exists is also true for directories, so we need to filter them out
+    ## explicitly
+    whichAreDirectories <- dir.exists(extPaths)
+    whichAreFiles <- !whichAreDirectories & file.exists(extPaths)
+
+    ## Ensure all the specified files/directories exist
+    whichExist <- whichAreDirectories | whichAreFiles
+    if (!all(whichExist)) {
         .stopNoCall(
-            "The directory path given for ", paramName, " was not found. ",
-            "Please ensure that the argument specifies a path to a ",
-            "directory containing .bed, .narrowPeak, .broadPeak, and/or ",
-            ".gappedPeak files containing ", paramDescription, ". ",
+            "The following paths given via ", paramName, " do not exist:\n",
+            paste(extPaths[!whichExist], collapse = "\n"), "\n\n",
+            "Please ensure that the argument specifies one or more paths to ",
+            ".bed, .narrowPeak, .broadPeak, and/or .gappedPeak files, ",
+            "or directories containing them, containing ",
+            paramDescription, ". ",
             "The files may optionally be compressed (.gz/.bz2/.xz)."
         )
     }
 
-    ## List all the external files found
-    extFileList <- list.files(
-        path = extDir,
-        pattern = "\\.(bed|(narrow|broad|gapped)Peak)(\\.gz|bz2|xz)?$",
-        ignore.case = TRUE,
-        full.names = TRUE
-    )
-
-    ## If there are no files return an error
-    if (length(extFileList) == 0) {
+    ## Ensure all the directly passed files have valid exitensions
+    extFileList <- extPaths[whichAreFiles]
+    invalidFiles <- extPaths[
+        grep(extFileList, filePattern, invert = TRUE, ignore.case = TRUE)
+    ]
+    if (length(invalidFiles) != 0) {
         .stopNoCall(
-            "The directory path given for ", paramName, " does not ",
-            "contain any .bed, .narrowPeak, .broadPeak, and/or .gappedPeak ",
-            "files. Please ensure that the argument specifies a path ",
-            "to a directory containing .bed, .narrowPeak, .broadPeak, ",
-            "and/or .gappedPeak files containing ", paramDescription, ". ",
+            "The following files given via ", paramName, " are of the wrong ",
+            "type:\n",
+            paste(invalidFiles, collapse = "\n"), "\n\n",
+            "Please ensure that the argument specifies one or more paths to ",
+            ".bed, .narrowPeak, .broadPeak, and/or .gappedPeak files, ",
+            "or directories containing them, containing ",
+            paramDescription, ". ",
             "The files may optionally be compressed (.gz/.bz2/.xz)."
         )
+    }
+
+    ## If any of the provided paths are directories, find all valid files in
+    ## them and add them to the list
+    if (any(whichAreDirectories)) {
+        dirPaths <- extPaths[whichAreDirectories]
+
+        ## List all the valid files found in the directories
+        filesInDirs <- list.files(
+            path = dirPaths,
+            pattern = filePattern,
+            ignore.case = TRUE,
+            full.names = TRUE
+        )
+
+        ## If there are no files return an error
+        if (length(filesInDirs) == 0) {
+            .stopNoCall(
+                "The directory paths given via ", paramName, " do not contain ",
+                "any .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files. ",
+                "Please ensure that the argument specifies one or more paths ",
+                "to these files, or directories containing them, containing ",
+                paramDescription, ". ",
+                "The files may optionally be compressed (.gz/.bz2/.xz)."
+            )
+        }
+
+        extFileList <- c(extFileList, filesInDirs)
     }
 
     return(extFileList)
@@ -40,8 +76,9 @@
 ## Internal function to validate the analysis type arguments and return a
 ## vector of the selected analysis types
 .validateAnalysisTypes <- function(
-    hypermethAnalysis, hypomethAnalysis,
-    allowNone = FALSE) {
+  hypermethAnalysis, hypomethAnalysis,
+  allowNone = FALSE
+) {
     analysisTypes <- NULL
     if (!allowNone && !any(hypermethAnalysis, hypomethAnalysis)) {
         .stopNoCall(
@@ -61,8 +98,9 @@
 ## Internal function to validate the input MultiAssayExperiment and return an
 ## error message if it is invalid
 .validateMultiAssayExperiment <- function(
-    MAE,
-    needGeneName = FALSE) {
+  MAE,
+  needGeneNames = FALSE
+) {
     ## Ensure that the user has provided a properly formatted
     ## MultiAssayExperiment object
     if (!inherits(MAE, "MultiAssayExperiment")) {
@@ -122,7 +160,7 @@
 
     ## Ensure that "gene_name" is present in the expression metadata and return
     ## an error if not
-    if (needGeneName) {
+    if (needGeneNames) {
         ExpressionGRangesMetadata <- GenomicRanges::elementMetadata(
             SummarizedExperiment::rowRanges(MAE@ExperimentList$expression)
         )
@@ -209,11 +247,12 @@
 ## Internal function to ensure that data from a certain TENET step are present
 ## in the MultiAssayExperiment and return an error message if not
 .ensureStepPresent <- function(
-    MAE,
-    stepName,
-    substepName = NA,
-    substepDescription = NA,
-    substepParamDescription = NA) {
+  MAE,
+  stepName,
+  substepName = NA,
+  substepDescription = NA,
+  substepParamDescription = NA
+) {
     if (!stepName %in% names(MAE@metadata)) {
         .stopNoCall(
             "Data output by the ", stepName, " function were not ",
@@ -241,8 +280,9 @@
 ## dataset, returning it as a variable. Can take a GRanges object directly, or
 ## a path to a GFF3 or GTF file.
 .loadGeneAnnotationDataset <- function(
-    geneAnnotationDataset,
-    featureTypes = "gene") {
+  geneAnnotationDataset,
+  featureTypes = "gene"
+) {
     ## If the argument is a character string, it must be a path to a GFF3 or
     ## GTF file
     if (length(geneAnnotationDataset) == 1 &&
@@ -446,10 +486,11 @@
 ## default), get all expression or methylation samples. This makes use of the
 ## mapping object, which must include the sampleType column.
 .getExpOrMetSamplesOfType <- function(
-    MAE,
-    expOrMet,
-    sampleType = NA,
-    namesOnly = FALSE) {
+  MAE,
+  expOrMet,
+  sampleType = NA,
+  namesOnly = FALSE
+) {
     ## Get the sample mapping, and sort it by sample type then the
     ## primary name. This is done to ensure that when sample names are grabbed
     ## for various expression or methylation sample subsets, they come out in
@@ -621,10 +662,11 @@
 ## specified, warn the user and return all the genes/TFs available. If
 ## topGeneNumber is NA, get all genes/TFs.
 .getQuadrantTopGenesOrTFs <- function(
-    TENETMultiAssayExperiment,
-    geneOrTF,
-    hyperHypo,
-    topGeneNumber) {
+  TENETMultiAssayExperiment,
+  geneOrTF,
+  hyperHypo,
+  topGeneNumber
+) {
     quadrantResultsName <- paste0(hyperHypo, "methGplusResults")
 
     ## Ensure the quadrant's results are present in step 6
@@ -716,11 +758,12 @@
 
 ## Internal function to import and verify various forms of clinical data
 .importClinicalData <- function(
-    userInput,
-    argumentName,
-    clinicalDataColumn = NA, ## Column(s) in colData (if userInput is NA)
-    returnType, ## "single" for 1 column, or "multiple" for multiple columns
-    TENETMultiAssayExperiment) {
+  userInput,
+  argumentName,
+  clinicalDataColumn = NA, ## Column(s) in colData (if userInput is NA)
+  returnType, ## "single" for 1 column, or "multiple" for multiple columns
+  TENETMultiAssayExperiment
+) {
     if (.isSingleNA(userInput)) {
         ## Since userInput is NA, look in the colData of the
         ## TENETMultiAssayExperiment object
@@ -1080,7 +1123,7 @@
 ## Internal list of all our ExperimentHub datasets and their names
 .TENETExperimentHubIDs <- c(
     "Example TENET MultiAssayExperiment" = "EH9587",
-    "Example TENET clinical dataframe" = "EH9588",
+    "Example TENET clinical data frame" = "EH9588",
     "Example TENET step1MakeExternalDatasets GRanges" = "EH9589",
     "Example TENET step2GetDifferentiallyMethylatedSites purity SummarizedExperiment" = "EH9590",
     "Example TENET peak regions GRanges" = "EH9591",
@@ -1131,7 +1174,8 @@
 ## names, assuming the methylation and expression values share a clinical
 ## data match within the mapping object of the MAE.
 .createMetToExpSampleConversionVector <- function(
-    MAE) {
+  MAE
+) {
     ## Get the methylation values that match with expression values
     ## using the mapping data.
     ## This assumes the methylation and expression values share a clinical

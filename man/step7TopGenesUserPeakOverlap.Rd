@@ -2,7 +2,7 @@
 % Please edit documentation in R/step7TopGenesUserPeakOverlap.R
 \name{step7TopGenesUserPeakOverlap}
 \alias{step7TopGenesUserPeakOverlap}
-\title{Identify if RE DNA methylation sites linked to top genes/transcription
+\title{Identify if RE DNA methylation sites linked to top genes and transcription
 factors are located within a specific distance of specified genomic regions}
 \usage{
 step7TopGenesUserPeakOverlap(
@@ -20,20 +20,21 @@ step7TopGenesUserPeakOverlap(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the \code{step5OptimizeLinks} and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in its metadata.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step5OptimizeLinks} and
+\code{step6DNAMethylationSitesPerGeneTabulation} functions.}
 
 \item{peakData}{Specify a data frame, matrix, or GRanges object with
-genomic regions (peaks) of interest, organized in a bed-like manner (see
-\url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}), a path to a directory
-containing .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files with peaks
-of interest, or a named list of any of these types of input. Peak names are
+genomic regions (peaks) of interest, organized in a BED-like manner (see
+\url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}), a path to a .bed,
+.narrowPeak, .broadPeak, and/or .gappedPeak file with peaks of interest,
+a path to a directory containing one or more of these file types,
+or a named list of any of these types of input. Peak names are
 taken from the fourth column of the input if it exists, or, if the input is a
 GRanges object, the names of the ranges. Additional columns can be included,
 but are not used by this function. If no names are present, they are
 generated from peak coordinates and take the form
-\verb{<chromosome>\\_<start>\\_<end>[.<optionalDuplicateNumber>]}. The files may
+\verb{<chromosome>\\_<start>\\_<end>[.<optionalDuplicateNumber>]}. Input files may
 optionally be compressed (.gz/.bz2/.xz).}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
@@ -43,7 +44,7 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
@@ -58,39 +59,37 @@ only those overlapping will be considered for analysis. If set to NA, all RE
 DNA methylation sites with locations listed in the rowRanges of the
 "methylation" SummarizedExperiment object are used. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to create data frames with the
-peak overlap information for the unique hypermethylated RE DNA methylation
-sites linked to the top genes/TFs by most hypermethylated RE DNA methylation
+\item{hypermethGplusAnalysis}{Set to TRUE to create data frames with the peak
+overlap information for the unique hypermethylated RE DNA methylation sites
+linked to the top genes and TFs by most hypermethylated RE DNA methylation
 sites with G+ links. Defaults to TRUE.}
 
 \item{hypomethGplusAnalysis}{Set to TRUE to create data frames with the peak
 overlap information for the unique hypomethylated RE DNA methylation sites
-linked to the top genes/TFs by most hypomethylated RE DNA methylation sites
-with G+ links. Defaults to TRUE.}
+linked to the top genes and TFs by most hypomethylated RE DNA methylation
+sites with G+ links. Defaults to TRUE.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
-linked RE DNA methylation sites of a given analysis type, for which to
-generate data showing overlap with user peak files for the RE DNA
+\item{topGeneNumber}{Specify the number of top genes and TFs, based on the
+most linked RE DNA methylation sites of a given analysis type, for which to
+generate data showing overlap with the specified peak datasets for the RE DNA
 methylation sites linked to those genes. Defaults to 10.}
 
-\item{distanceFromREDNAMethylationSites}{Specify either 0 or a positive
-integer in base pairs to be the distance from the linked RE DNA methylation
-sites within which an RE DNA methylation site will be considered to overlap
-a peak. Defaults to 100.}
+\item{distanceFromREDNAMethylationSites}{Specify the distance from the linked
+RE DNA methylation sites within which an RE DNA methylation site will be
+considered to overlap a peak. Must be a nonnegative integer. Defaults to 100.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mclapply. See
 \code{?parallel::mclapply} for more details. Defaults to 1.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesUserPeakOverlap' in its metadata with the output of this
-function. This list is subdivided into hypermethGplus or hypomethGplus
-results as selected by the user, which are further subdivided into lists
-with data for the unique RE DNA methylation sites linked to the top
-overall genes, and for top TF genes only. Each of these lists contains two
-elements. The first, \code{peakFileOverlapInfo}, is a list of data frames named
-after the input peak files (without extensions). If a single R object was
+TENETMultiAssayExperiment argument with an additional list named
+'step7TopGenesUserPeakOverlap' in its metadata containing the output of this
+function. This list contains \code{hypermethGplus} and/or \code{hypomethGplus} lists,
+as selected by the user, which contain lists for the top overall genes and
+top TF genes. Each of these lists contains two elements. The first,
+\code{peakDatasetOverlapInfo}, is a list of data frames named
+after the peak datasets (without file extensions). If a single R object was
 provided as input, the list will contain a single element named 'peakData'.
 Each data frame contains peak names in the column names and RE DNA
 methylation site IDs in the row names. The Boolean values indicate whether
@@ -98,30 +97,32 @@ each RE DNA methylation site overlaps with each peak. The second,
 \code{linkedDNAMethylationSiteInfo}, is a data frame containing a row for each of
 the unique RE DNA methylation sites linked to the top genes/TFs for the
 specified analysis types. The columns note the location of the RE DNA
-methylation site and the specified search windows and whether the RE DNA
-methylation site is linked to each of the top genes/TFs.
+methylation site, the specified search window for the site, and whether the
+site is linked to each of the top genes/TFs.
 }
 \description{
-This function takes the top genes/transcription factors (TFs) by number of
-linked RE DNA methylation sites identified by the
+This function takes the top genes and transcription factors (TFs) by number
+of linked RE DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
 specified by the user, and identifies if the RE DNA methylation sites linked
-to those genes/TFs from the hyper- or hypomethylated G+ analysis quadrants
-are found in the vicinity of genomic regions (peaks) of interest, supplied
-by the user in the form of .bed, .narrowPeak, .broadPeak, and/or gappedPeak
-files in a specified directory or given as a data frame or GRanges object.
+to those genes/TFs from the hyper- and/or hypomethylated G+ analysis
+quadrants are found in the vicinity of genomic regions (peaks) of interest,
+supplied by the user in the form of .bed, .narrowPeak, .broadPeak, and/or
+gappedPeak files, directories containing these files, data frames, and/or
+GRanges objects.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to do peak overlapping for all unique RE DNA
-## methylation sites linked to the top 10 genes, by number of linked hyper-
-## or hypomethylated RE DNA methylation sites, using a GRanges object
-## containing the genomic coordinates of peaks of interest. Gene names, and
-## the locations of RE DNA methylation sites, will be retrieved from the
+## TENET.ExperimentHub package to overlap example peaks with all unique RE
+## DNA methylation sites linked to the top 10 genes by number of linked
+## hyper- and hypomethylated RE DNA methylation sites, using a GRanges object
+## containing the genomic coordinates of peaks of interest. Gene names and
+## the locations of RE DNA methylation sites will be retrieved from the
 ## rowRanges of the 'expression' and 'methylation' SummarizedExperiment
-## objects in the example MultiAssayExperiment. The analysis will be
-## performed using one CPU core.
+## objects in the example MultiAssayExperiment. A window of 100 base pairs
+## will be used to identify if the RE DNA methylation sites lie within the
+## vicinity of peaks. The analysis will be performed using one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
@@ -131,31 +132,31 @@ exampleTENETMultiAssayExperiment <-
 ## Load the example peak GRanges object from the TENET.ExperimentHub package
 exampleTENETPeakRegions <- TENET.ExperimentHub::exampleTENETPeakRegions()
 
-## Use the example datasets to do the peak overlapping
+## Use the example datasets to perform the peak overlapping
 returnValue <- step7TopGenesUserPeakOverlap(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     peakData = exampleTENETPeakRegions
 )
 
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to do peak overlapping for all unique RE DNA
-## methylation sites linked to the top 5 genes only, by number of linked
-## hypomethylated RE DNA methylation sites only, using bed-like files
-## containing the genomic coordinates of peaks of interest in the user's R
+## TENET.ExperimentHub package to overlap specified peaks with all unique RE
+## DNA methylation sites linked to only the top 5 genes by number of linked
+## hypomethylated RE DNA methylation sites. The genomic coordinates of peaks
+## of interest will be loaded from BED-like files located in the user's R
 ## working directory. Gene names will be retrieved from the rowRanges of the
 ## 'expression' SummarizedExperiment object in the example
 ## MultiAssayExperiment, and RE DNA methylation sites and their locations
-## retrieved from the HM450 array via the sesameData package. A window of
-## 500 base pairs will be used to identify if the RE DNA methylation sites
-## lie within the vicinity of peaks. The analysis will be performed using 8
-## CPU cores.
+## will be retrieved from the HM450 array via the sesameData package. A
+## window of 500 base pairs will be used to identify if the RE DNA
+## methylation sites lie within the vicinity of peaks. The analysis will be
+## performed using 8 CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object from the
 ## TENET.ExperimentHub package
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the peak overlapping
+## Use the example datasets to perform the peak overlapping
 returnValue <- step7TopGenesUserPeakOverlap(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     peakData = ".",

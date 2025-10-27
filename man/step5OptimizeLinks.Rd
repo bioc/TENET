@@ -18,48 +18,45 @@ step5OptimizeLinks(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such
-as one created by the TCGADownloader function. This MultiAssayExperiment
-object should also contain the results from the
-\code{step2GetDifferentiallyMethylatedSites}, \code{step3GetAnalysisZScores}, and
-\code{step4SelectMostSignificantLinksPerDNAMethylationSite} functions in its
-metadata.}
+as one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step2GetDifferentiallyMethylatedSites},
+\code{step3GetAnalysisZScores}, and
+\code{step4SelectMostSignificantLinksPerDNAMethylationSite} functions.}
 
 \item{hypermethGplusAnalysis}{Set to TRUE to optimize hypermethylated
-G+ links. Requires hypermethAnalysis from step 4 to have been set to TRUE.}
+G+ links. Requires \code{hypermethAnalysis} to have been set to TRUE in step 4.}
 
 \item{hypomethGplusAnalysis}{Set to TRUE to optimize hypomethylated
-G+ links. Requires hypomethAnalysis from step 4 to have been set to TRUE.}
+G+ links. Requires \code{hypomethAnalysis} to have been set to TRUE in step 4.}
 
 \item{expressionPvalCutoff}{Cutoff for Benjamini-Hochberg corrected
 Wilcoxon p-values used during comparison of gene expression values between
 hyper/hypomethylated case and control samples. Defaults to 0.05.}
 
-\item{hyperStringency}{Specify a number from 0 to 1 to be the beta-value
-cutoff to optimize for hypermethylated links with methylation values above
-the cutoff if a more/less selective cutoff is desired. Defaults to the
-hypermethCutoff value specified in step2GetDifferentiallyMethylatedSites.}
+\item{hyperStringency}{Specify a beta-value cutoff as a number from 0 to 1 to
+select hypermethylated links with methylation values above the cutoff.
+Defaults to the \code{hypermethCutoff} value specified in step 2.}
 
-\item{hypoStringency}{Specify a number from 0 to 1 to be the beta-value
-cutoff to optimize for hypomethylated links with methylation values below
-the cutoff if a more/less selective cutoff is desired. Defaults to the
-hypomethCutoff value specified in step2GetDifferentiallyMethylatedSites.}
+\item{hypoStringency}{Specify a beta-value cutoff as a number from 0 to 1 to
+select hypomethylated links with methylation values below the cutoff.
+Defaults to the \code{hypomethCutoff} value specified in step 2.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mcmapply.
 See \code{?parallel::mcmapply} for more details. Defaults to 1.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of data named
-"step5OptimizeLinks" in its metadata with the output of this function, which
-includes the gene and RE DNA methylation site IDs of each optimized gene-RE
-DNA methylation site link, the Z-scores and corresponding p-values
+TENETMultiAssayExperiment argument with an additional list named
+"step5OptimizeLinks" in its metadata containing the output of this function,
+which includes the gene and RE DNA methylation site IDs of each optimized
+gene-RE DNA methylation site link, the Z-scores and corresponding p-values
 calculated in steps 3-4 for those links, and the various optimization
-metrics performed by this step.
+metrics calculated by this step.
 }
 \description{
-This function takes the most significant hyper- or hypomethylated G+ RE DNA
-methylation site-gene links selected in step 4, and selects optimized links
-based on the relative expression of the given gene in hyper- or
+This function takes the most significant hyper- and/or hypomethylated G+ RE
+DNA methylation site-gene links selected in step 4, and selects optimized
+links based on the relative expression of the given gene in hyper- or
 hypomethylated case samples compared to control samples, using an unpaired
 two-sided Wilcoxon rank-sum test to check that the hyper- or hypomethylated
 samples for that given RE DNA methylation site-gene link also show
@@ -70,14 +67,14 @@ methylation above/below the \code{hyperStringency}/\code{hypoStringency} cutoff 
 selected.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to optimize links between the hypermethylated
 ## and hypomethylated RE DNA methylation sites and the expression of
-## transcription factor genes. For this analysis, the default p-value cutoff
-## of 0.05 is used, with `hyperStringency` and `hypoStringency` values set
-## to the originally calculated hyper- and hypomethylation cutoffs. The
-## analysis uses one CPU core.
+## transcription factor genes. The default p-value cutoff of 0.05 is used,
+## and the `hyperStringency` and `hypoStringency` values are set to the
+## originally calculated hyper- and hypomethylation cutoffs. The analysis
+## uses one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
@@ -89,11 +86,10 @@ returnValue <- step5OptimizeLinks(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example also uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package, but it only runs on hypomethylated RE DNA
-## methylation sites and uses a p-value cutoff of 0.01. The `hypoStringency`
-## value is set to 0.3 specifically rather than using the originally set
-## hypomethylation cutoff. Eight CPU cores are used to perform the analysis.
+## This example demonstrates many of the analysis options. It only runs
+## on hypomethylated RE DNA methylation sites and uses an expression p-value
+## cutoff of 0.01. The `hypoStringency` value is set to 0.3, overriding the
+## hypomethylation cutoff set in step 2. The analysis uses eight CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package

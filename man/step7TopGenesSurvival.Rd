@@ -26,13 +26,12 @@ step7TopGenesSurvival(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the
-\code{step2GetDifferentiallyMethylatedSites}, \code{step5OptimizeLinks}, and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in
-its metadata. Additionally, the colData of the MultiAssay object must contain
-a 'vital_status' and 'time' column, containing data on the patients' survival
-status and time to event/censorship, respectively.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step2GetDifferentiallyMethylatedSites},
+\code{step5OptimizeLinks}, and \code{step6DNAMethylationSitesPerGeneTabulation}
+functions. The object's colData must contain 'vital_status' and 'time'
+columns containing data on the patients' survival status and time to
+event/censorship, respectively.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -41,58 +40,49 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to perform survival analyses on
-top genes/TFs by most hypermethylated RE DNA methylation sites with G+ links,
-as well as their linked RE DNA methylation sites.}
+\item{hypermethGplusAnalysis}{Set to TRUE to perform survival analyses on the
+top genes and TFs by most hypermethylated RE DNA methylation sites with G+
+links, as well as their linked RE DNA methylation sites.}
 
-\item{hypomethGplusAnalysis}{Set to TRUE to perform survival analyses on
-top genes/TFs by most hypomethylated RE DNA methylation sites with G+ links,
-as well as their linked RE DNA methylation sites.}
+\item{hypomethGplusAnalysis}{Set to TRUE to perform survival analyses on the
+top genes and TFs by most hypomethylated RE DNA methylation sites with G+
+links, as well as their linked RE DNA methylation sites.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
-linked RE DNA methylation sites of a given analysis type, for which to
+\item{topGeneNumber}{Specify the number of top genes and TFs, based on the
+most linked RE DNA methylation sites of a given analysis type, for which to
 perform survival analyses. Defaults to 10.}
 
-\item{vitalStatusData}{Specify the vital status data for samples in the
-TENETMultiAssayExperiment. Vital status should be given in the form of
+\item{vitalStatusData}{Specify the patient vital status data for samples in
+the TENETMultiAssayExperiment. Vital status should be given in the form of
 either "alive" or "dead" (case-insensitive), or 1 or 2, indicating that the
 sample was collected from a patient who was alive/censored or dead/reached
-the outcome of interest, respectively. These
-data can be given in a variety of forms, including a vector, data frame/
-matrix, or a path to a file that contains the vital status data. If a vector
-is given, the names of the vector elements must correspond to the names of
-the samples in the rownames of the colData of the TENETMultiAssayExperiment
-object. If no names are provided for the vector, then the number of elements
-in the vector must equal the number of samples in the colData, and are
-assumed to align with the samples as they are ordered in the colData. If a
-data frame or matrix is given, its rownames must include the sample names as
-they appear in the colData of the TENETMultiAssayExperiment object, and its
-first column must include the vital status data. If a single string
-is provided, then it is assumed to be a path to a tab-delimited file
-containing vital status data in the second column, and the names of the
-samples, again corresponding with the sample names in the colData, in the
-first column, which will be loaded as the row names. The first row of the
-file must contain column names. If this variable is set to NA, then
-the vital status data will be assumed to already be contained in the colData
-of the TENETMultiAssayExperiment under a column titled "vital_status".
-Defaults to NA.}
+the outcome of interest, respectively. These data can be given as a vector,
+data frame, matrix, or path to a TSV file. Given sample names must match
+the names of the samples in the colData of the TENETMultiAssayExperiment. If
+a vector is given, the names of its elements must be the sample names; if it
+has no names, its length must equal the number of samples in the colData, and
+its values must be in the same order as the samples in the colData. If a data
+frame or matrix is given, its rownames must contain the sample names, and its
+first column must contain the vital status. If a TSV file is given, its first
+column must contain the sample names, its second column must contain the
+vital status, and its first row must contain column names. If set to NA,
+vital status data will be retrieved from the "vital_status" column of the
+colData of the TENETMultiAssayExperiment. Defaults to NA.}
 
-\item{survivalTimeData}{Specify the survival time data for samples in the
-TENETMultiAssayExperiment. Survival time should be given in the form of a
-numeric variable. These data can be given in a variety of forms, including a
-vector, data frame/matrix, or a path to a file that contains the survival
-time data. See the documentation for the vitalStatusData argument for more
-information. If this variable is set to NA, then the survival time
-data will be assumed to already be contained in the colData of the
-TENETMultiAssayExperiment under a column titled "time". Defaults to NA.}
+\item{survivalTimeData}{Specify the numeric survival time data for samples in
+the TENETMultiAssayExperiment. These data can be given as a vector, data
+frame, matrix, or path to a TSV file; see the documentation for
+\code{vitalStatusData} for more information. If set to NA, survival time data will
+be retrieved from the "time" column of the colData of the
+TENETMultiAssayExperiment. Defaults to NA.}
 
-\item{highProportion}{Set a number ranging from 0 to 1, indicating the
-proportion of all samples to include in the high expression/methylation
-group for Kaplan-Meier survival analyses. If values are specified for this
+\item{highProportion}{Specify the proportion of all samples to include in the
+high expression/methylation group for Kaplan-Meier survival analyses as a
+number ranging from 0 to 1.  If values are specified for this
 and \code{lowProportion}, splitting the samples in this manner will supersede
 any arguments which are given for \code{survivalGroupingCutoffs}, \code{useJenksBreaks}
 and \code{jenksBreaksGroupCount}. Defaults to 0.5.}
@@ -108,17 +98,15 @@ manner will supersede any arguments which are given for
 \code{survivalGroupingCutoffs}, \code{useJenksBreaks} and \code{jenksBreaksGroupCount}.
 Defaults to 0.5.}
 
-\item{survivalGroupingCutoffs}{Specify a data frame or matrix object with two
-columns and n rows, where n represents the number of groups the expression/
-methylation samples should be broken into. Values in the object should range
-from 0 to 1, reflecting the proportion of samples to include in each given
-group. Values in the first column should reflect the minimum proportion to
-include in each group, while values in the second column should reflect the
-max proportion (up to, but not including) for samples in the group. Row names
-can be given to the object to specify the names the user wishes to be used
-for the groups. If a valid data frame or matrix is given, it will supersede
-any arguments given for \code{useJenksBreaks} and \code{jenksBreaksGroupCount}.
-Defaults to NA (to not use custom grouping).}
+\item{survivalGroupingCutoffs}{To use custom sample grouping, specify a data
+frame or matrix with two columns and \emph{n} rows, where \emph{n} is the number of
+groups the samples should be broken into, and values ranging from 0 to 1
+reflecting the proportion of samples to include in each group. Values in the
+first column should reflect the minimum proportion, and values in the second
+column should reflect the maximum proportion (non-inclusive if not 1). If the
+object has row names, they will be used to name the groups. If this argument
+is specified, \code{useJenksBreaks} and \code{jenksBreaksGroupCount} will be ignored.
+Defaults to NA.}
 
 \item{useJenksBreaks}{Set to TRUE to automatically set cutoffs for the a
 number of groups as specified by the \code{jenksBreaksGroupCount} using Jenks
@@ -126,7 +114,7 @@ natural breaks optimization. If this is TRUE, a value for the number of
 groups to be assessed must also be specified for the \code{jenksBreaksGroupCount}
 argument. Additionally, the \code{highProportion}, \code{lowProportion}, and
 \code{survivalGroupingCutoffs} arguments must be NA, as they supersede this
-analysis type. Defaults to FALSE to not use Jenks breaks.}
+analysis type. Defaults to FALSE.}
 
 \item{jenksBreaksGroupCount}{Set to a positive integer to specify the number
 of groups the survival data will be broken into, with cutoffs set between
@@ -142,8 +130,8 @@ RE DNA methylation sites linked to them. Defaults to TRUE.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesSurvival' in its metadata with the output of this
+TENETMultiAssayExperiment argument with an additional list
+named 'step7TopGenesSurvival' in its metadata containing the output of this
 function. This list is subdivided into hypermethGplus or hypomethGplus
 results as selected by the user, which are further subdivided into lists with
 data for the top overall genes, and for top TF genes only. Each contains a
@@ -153,48 +141,46 @@ regression analyses. Additionally, they will also include a list of
 Kaplan-Meier plots if generatePlots is TRUE.
 }
 \description{
-This function takes the top genes/transcription factors (TFs) by number of
-linked RE DNA methylation sites identified by the
-\code{step6DNAMethylationSitesPerGeneTabulation} function up to the number
-specified by the user and generates survival plots and tables with statistics
-from survival analyses assessing the survival association of the expression
-level of each gene as well as the methylation level of each RE DNA
-methylation site linked to them, using groupings based on either percentile
-cutoffs or Jenks natural breaks as specified by the user, for Kaplan-Meier
-analyses.
+This function takes the top genes and transcription factors (TFs) by number
+of linked RE DNA methylation sites identified by the
+\code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
+specified by the user, and generates plots and tables with statistics
+assessing the survival association of the expression of each gene and the
+methylation level of each RE DNA methylation site linked to each gene,
+using groupings based on either percentile cutoffs or Jenks natural breaks
+for Kaplan-Meier analyses.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-## survival analyses for the top 10 genes/TFs, by number of linked hyper- or
-## hypomethylated RE DNA methylation sites, as well as for all unique RE DNA
-## methylation sites linked to those
-## 10 genes/TFs. The vital status and survival time of patients will be
-## taken from the "vital_status" and "time" columns present in the colData of
-## the example MultiAssayExperiment. Gene names will be retrieved from the
-## rowRanges of the 'expression' SummarizedExperiment object in the example
-## MultiAssayExperiment. For Kaplan-Meier analyses, the patient samples with
-## complete clinical information in the highest half of
-## expression/methylation will be compared to the patient samples with
-## complete clinical information in the lowest half. Kaplan-Meier plots will
-## be saved for the genes and RE DNA methylation sites, and the analysis will
-## be performed using one CPU core.
+## survival analyses for the top 10 genes and TFs by number of linked hyper-
+## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
+## methylation sites linked to those 10 genes/TFs. The vital status and
+## survival time of patients will be taken from the "vital_status" and "time"
+## columns of the colData of the example MultiAssayExperiment. Gene names
+## will be retrieved from the rowRanges of the 'expression'
+## SummarizedExperiment object in the example MultiAssayExperiment. In the
+## Kaplan-Meier analyses, the patient samples with complete clinical
+## information in the highest half of expression/methylation will be compared
+## to the patient samples with complete clinical information in the lowest
+## half. Kaplan-Meier plots will be saved for the genes and RE DNA
+## methylation sites, and the analysis will be performed using one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the survival analysis
+## Use the example dataset to perform the survival analysis
 returnValue <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-## survival analyses for only the top 5 genes/TFs, by number of linked
-## hypomethylated RE DNA methylation sites, as well as for all unique
+## survival analyses for only the top 5 genes and TFs, by number of linked
+## hypomethylated RE DNA methylation sites, and for all unique
 ## RE DNA methylation sites linked to those 5 genes/TFs only. The vital
 ## status and survival time of patients will be
 ## taken from specific columns in a separate data frame with example patient
@@ -218,7 +204,7 @@ exampleTENETMultiAssayExperiment <-
 exampleTENETClinicalDataFrame <-
     TENET.ExperimentHub::exampleTENETClinicalDataFrame()
 
-## Use the example datasets to do the survival analysis
+## Use the example datasets to perform the survival analysis
 returnValue <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     hypermethGplusAnalysis = FALSE,
@@ -233,8 +219,8 @@ returnValue <- step7TopGenesSurvival(
 
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-## survival analyses for the top 10 genes/TFs, by number of linked hyper- or
-## hypomethylated RE DNA methylation sites, as well as for all unique RE DNA
+## survival analyses for the top 10 genes and TFs, by number of linked hyper-
+## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
 ## methylation sites linked to those 10 genes/TFs. The vital status and
 ## survival time of patients will be taken from the "vital_status" and "time"
 ## columns present in the colData of the example MultiAssayExperiment. Gene
@@ -249,9 +235,9 @@ returnValue <- step7TopGenesSurvival(
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Create a custom cutoffsMatrix which will split the samples into quartiles
+## Create a custom cutoff matrix which will split the samples into quartiles
 ## for the purposes of the survival analyses and will also define custom
-## names for these groups:
+## names for these groups
 cutoffMatrix <- data.frame(
     "Low" = c(0, (1 / 4), (1 / 2), (3 / 4)),
     "High" = c((1 / 4), (1 / 2), (3 / 4), 1)
@@ -263,7 +249,7 @@ rownames(cutoffMatrix) <- c(
     "GroupFour"
 )
 
-## Use the example dataset and cutoffMatrix to do the survival analysis
+## Use the example dataset and cutoffMatrix to perform the survival analysis
 returnValue <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     highProportion = NA,
@@ -273,8 +259,8 @@ returnValue <- step7TopGenesSurvival(
 
 ## This final example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-## survival analyses for the top 10 genes/TFs, by number of linked hyper- or
-## hypomethylated RE DNA methylation sites, as well as for all unique RE DNA
+## survival analyses for the top 10 genes and TFs, by number of linked hyper-
+## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
 ## methylation sites linked to those 10 genes/TFs. The vital status and
 ## survival time of patients will be taken from the "vital_status" and "time"
 ## columns present in the colData of the example MultiAssayExperiment. Gene
@@ -290,7 +276,7 @@ returnValue <- step7TopGenesSurvival(
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the survival analysis
+## Use the example dataset to perform the survival analysis
 returnValue <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     highProportion = NA,

@@ -3,7 +3,7 @@
 \name{step7TopGenesDNAMethylationHeatmaps}
 \alias{step7TopGenesDNAMethylationHeatmaps}
 \title{Generate heatmaps displaying the methylation level of all RE DNA methylation
-sites linked to the top genes/transcription factors, along with the
+sites linked to the top genes and transcription factors, along with the
 expression of those genes in the column headers, in the case samples within
 the supplied MultiAssayExperiment object}
 \usage{
@@ -18,10 +18,9 @@ step7TopGenesDNAMethylationHeatmaps(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the
-step2GetDifferentiallyMethylatedSites, \code{step5OptimizeLinks}, and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in its metadata.}
+one created by the TCGADownloader function. The object's metadata must also
+contain the results from the \verb{step2GetDifferentiallyMethylatedSites, }step5OptimizeLinks\verb{, and }step6DNAMethylationSitesPerGeneTabulation`
+functions.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -30,38 +29,36 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to create heatmaps showing DNA
-methylation levels of RE DNA methylation sites linked to the top genes/TFs
-with the most hypermethylated RE DNA methylation sites with G+ links.
+\item{hypermethGplusAnalysis}{Set to TRUE to create heatmaps showing the
+methylation levels of RE DNA methylation sites linked to the top genes and
+TFs with the most hypermethylated RE DNA methylation sites with G+ links.
 Defaults to TRUE.}
 
-\item{hypomethGplusAnalysis}{Set to TRUE to create heatmaps showing DNA
-methylation levels of RE DNA methylation sites linked to the top genes/TFs
-with the most hypomethylated RE DNA methylation sites with G+ links.
+\item{hypomethGplusAnalysis}{Set to TRUE to create heatmaps showing the
+methylation levels of RE DNA methylation sites linked to the top genes and
+TFs with the most hypomethylated RE DNA methylation sites with G+ links.
 Defaults to TRUE.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
-linked RE DNA methylation sites of a given analysis type, for which to
+\item{topGeneNumber}{Specify the number of top genes and TFs, based on the
+most linked RE DNA methylation sites of a given analysis type, for which to
 generate heatmaps with their linked RE DNA methylation sites' methylation
 levels. Defaults to 10.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesDNAMethylationHeatmaps' in its metadata with the output
-of this function. This list is subdivided into hypermethGplus or
-hypomethGplus results as selected by the user, which are further subdivided
-into lists with data for the top overall genes and for top TF genes only.
-Each of these contains a single heatmap, with the expression of the top
+TENETMultiAssayExperiment argument with an additional list named
+'step7TopGenesDNAMethylationHeatmaps' in its metadata containing the output
+of this function. This list contains \code{hypermethGplus} and/or \code{hypomethGplus}
+lists, as selected by the user, which contain heatmaps for the top overall
+genes and the top TF genes. These heatmaps show the expression of the top
 genes/TFs in the column headers and the methylation of their unique linked
-RE DNA methylation sites in the body of the heatmaps.
+RE DNA methylation sites in the body.
 }
 \description{
-This function takes the top genes/transcription factors (TFs) for each
 analysis type by number of linked RE DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
 specified by the user, and generates heatmaps displaying the methylation
@@ -69,11 +66,11 @@ level of the unique RE DNA methylation sites linked to any of those genes,
 along with the expression of those genes in the case samples only.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create heatmaps for the top 10 genes/TFs,
-## by number of linked hyper- or hypomethylated RE DNA methylation sites, as
-## well as the unique RE DNA methylation sites linked to those 10 genes.
+## TENET.ExperimentHub package to create heatmaps for the top 10 genes and
+## TFs by number of linked hyper- and hypomethylated RE DNA methylation
+## sites and the unique RE DNA methylation sites linked to those genes.
 ## Gene names will be retrieved from the rowRanges of the 'expression'
 ## SummarizedExperiment object in the example MultiAssayExperiment.
 
@@ -87,13 +84,8 @@ returnValue <- step7TopGenesDNAMethylationHeatmaps(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create heatmaps for only the top 5
-## genes/TFs, by number of linked hypomethylated RE DNA methylation sites
-## only, as well as the unique RE DNA methylation sites linked to those 5
-## genes/TFs. Gene names will be retrieved from the rowRanges of the
-## 'expression' SummarizedExperiment object in the example
-## MultiAssayExperiment.
+## This example is similar, but creates heatmaps for only the top 5 genes
+## and TFs by number of linked hypomethylated RE DNA methylation sites.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package

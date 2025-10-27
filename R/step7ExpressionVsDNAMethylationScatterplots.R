@@ -3,17 +3,18 @@
 ## Internal function to generate a scatterplot for an RE DNA methylation
 ## site-gene combination
 .internalScatterplotFunction <- function(
-    geneOfInterest,
-    methSiteOfInterest,
-    expressionData,
-    methylationData,
-    sampleInfo,
-    simpleOrComplex,
-    geneIDNameDF,
-    CNVDataset,
-    SMDataset,
-    purityValues,
-    hyperHypo) {
+  geneOfInterest,
+  methSiteOfInterest,
+  expressionData,
+  methylationData,
+  sampleInfo,
+  simpleOrComplex,
+  geneIDNameDF,
+  CNVDataset,
+  SMDataset,
+  purityValues,
+  hyperHypo
+) {
     ## Get gene expression values
     geneExpression <- c(unlist(
         expressionData[geneOfInterest, sampleInfo$expNames]
@@ -269,19 +270,20 @@
 ## axis and expression of that gene on the X axis across all the case and
 ## control samples. listValues must be either "genes" or "methSites".
 .quadrantScatterplotFunction <- function(
-    geneOrMethSiteListOfInterest,
-    geneOrMethSiteVectorOfInterest,
-    listValues,
-    geneIDNameDF,
-    expressionData,
-    methylationData,
-    sampleInfo,
-    metToExpSampleConversion,
-    simpleOrComplex,
-    CNVDataset,
-    SMDataset,
-    purityValues,
-    hyperHypo) {
+  geneOrMethSiteListOfInterest,
+  geneOrMethSiteVectorOfInterest,
+  listValues,
+  geneIDNameDF,
+  expressionData,
+  methylationData,
+  sampleInfo,
+  metToExpSampleConversion,
+  simpleOrComplex,
+  CNVDataset,
+  SMDataset,
+  purityValues,
+  hyperHypo
+) {
     ## Unlist the list values
     unlistedValues <- c(unlist(geneOrMethSiteListOfInterest))
 
@@ -356,26 +358,26 @@
 ## Main step7ExpressionVsDNAMethylationScatterplots function
 
 #' Create scatterplots displaying the expression of the top genes and the
-#' methylation levels of each of their linked RE DNA methylation sites, along
-#' with copy number variation, somatic mutation, and purity data, if provided by
-#' the user
+#' methylation levels of each of their linked RE DNA methylation sites,
+#' optionally incorporating copy number variation, somatic mutation, and purity
+#' data
 #'
-#' This function takes the top genes/transcription factors (TFs) by number of
+#' This function takes the top genes and transcription factors by number of
 #' linked RE DNA methylation sites identified by the
-#' `step6DNAMethylationSitesPerGeneTabulation` function up to the number
+#' `step6DNAMethylationSitesPerGeneTabulation` function up to a number
 #' specified by the user, or all genes linked to selected RE DNA methylation
-#' sites in a list specified by the user, and generates scatterplots displaying
-#' the expression level of each of these genes in the x-axis and the
-#' methylation level of each RE DNA methylation site linked to them for both of
-#' the hyper- or hypomethylated G+ analysis quadrants, as selected by the user.
-#' The scatterplots incorporate copy number variation (CNV), somatic mutation
-#' (SM), and purity information from each sample, if provided by the user.
+#' sites specified by the user, and generates scatterplots displaying
+#' the expression level of each of these genes in the X-axis and the
+#' methylation level of each RE DNA methylation site linked to them in the
+#' Y-axis for the hyper- and/or hypomethylated G+ analysis quadrants.
+#' The scatterplots may optionally incorporate provided copy number variation
+#' (CNV), somatic mutation (SM), and purity information for each sample.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
-#' one created by the TCGADownloader function. This MultiAssayExperiment object
-#' should also contain the results from the `step5OptimizeLinks` and
-#' `step6DNAMethylationSitesPerGeneTabulation` functions in its metadata.
+#' one created by the TCGADownloader function. The object's metadata
+#' must contain the results from the `step5OptimizeLinks` and
+#' `step6DNAMethylationSitesPerGeneTabulation` functions.
 #' @param geneAnnotationDataset Specify a gene annotation dataset which is
 #' used to identify names for genes by their Ensembl IDs. The argument must be
 #' either a GRanges object (such as one imported via `rtracklayer::import`) or a
@@ -383,7 +385,7 @@
 #' supported. Other annotation datasets may work, but have not been tested.
 #' See the "Input data" section of the vignette for information on the required
 #' dataset format.
-#' Specify NA to use the names for genes listed in the "geneName" column of the
+#' Specify NA to use the gene names listed in the "geneName" column of the
 #' elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 #' object within the TENETMultiAssayExperiment object. Defaults to NA.
 #' @param hypermethGplusAnalysis Set to TRUE to create scatterplots for genes
@@ -392,117 +394,86 @@
 #' @param hypomethGplusAnalysis Set to TRUE to create scatterplots for genes
 #' with hypomethylated RE DNA methylation sites with G+ links and each of their
 #' linked RE DNA methylation sites. Defaults to TRUE.
-#' @param topGeneNumber Specify the number of top genes/TFs, based on the most
-#' linked RE DNA methylation sites of a given analysis type, for which to create
-#' scatterplots. Defaults to 10.
+#' @param topGeneNumber Specify the number of top genes and TFs, based on the
+#' most linked RE DNA methylation sites of a given analysis type, for which to
+#' create scatterplots. Defaults to 10.
 #' @param DNAMethylationSites Supply a vector of RE DNA methylation site IDs for
-#' which scatterplots of those RE DNA methylation sites with expression of any
-#' linked genes/TFs of the specified analysis types will be generated.
-#' @param simpleOrComplex Set to 'simple' to create scatterplots without
-#' using copy number variation, somatic mutation, or purity data from
-#' samples. Otherwise set to 'complex' to use such data in the scatterplots. If
-#' set to 'complex', data on the samples' copy number variation, somatic
-#' mutation data, and purity data will need to be provided to the subsequent
-#' CNVData, SMData, and purityData arguments respectively. Defaults to
-#' 'simple'.
-#' @param CNVData Specify the CNV status for each of the top genes and each
-#' sample in the TENETMultiAssayExperiment. CNV status should be given in the
-#' form of an integer value with a minimum of -2, representing the change in
-#' copy number for each of the top genes, by the 'hypermethGplusAnalysis',
-#' 'hypomethGplusAnalysis', and 'topGeneNumber' settings, with -2
-#' representing a loss of both copies, -1 a single copy loss, 0 for no copy
-#' number change, and positive values indicating a gain of that many copies,
-#' although copy number gains of 2 or more will be grouped together. These data
-#' can be given in the form of a data frame/matrix, or a path to a file that
-#' contains the vital status data. If a data frame or matrix is given, then the
-#' rownames of the supplied data frame or matrix must include the sample names
-#' as they appear in the colData of the TENETMultiAssayExperiment object. If a
-#' single string is provided, then it is assumed to be a path to a file
-#' containing tab-delimited CNV data. It is expected that the names of the
-#' samples, again corresponding with the sample names in the colData, are given
-#' in the first column of the file, which will be loaded as row names. It is
-#' also assumed the first row of the loaded file contains column headers. In
-#' both cases, it is assumed a given data frame/matrix, or the one loaded from a
-#' given file path, will contain CNV data for each of the top genes, as
-#' determined by the user settings for the 'hypermethGplusAnalysis' and
-#' 'hypomethGplusAnalysis' arguments, as well as the 'topGeneNumber', with
-#' the gene IDs for those genes followed by "_CNV" in the column names.
-#' If this variable is set to NA, then the CNV data will be assumed to
-#' already be contained in the colData of the TENETMultiAssayExperiment under
-#' columns similarly named as the gene ID followed by "_CNV" for each of the
-#' top genes, as determined by the user settings for the
-#' 'hypermethGplusAnalysis' and 'hypomethGplusAnalysis' arguments, as well as
-#' the 'topGeneNumber'. Note: if a given gene is missing this information, then
-#' the plot will be generated without considering the CNV status of that gene.
-#' Defaults to NA, and is only considered if 'simpleOrComplex' is set to
+#' which scatterplots will be generated, if these sites have any linked
+#' genes/TFs with expression in each specified analysis type.
+#' @param simpleOrComplex Set to 'complex' to incorporate copy number variation,
+#' somatic mutation, and purity data into the scatterplots. Otherwise, set to
+#' 'simple'. If set to 'complex', copy number variation, somatic mutation, and
+#' purity data must be provided via the `CNVData`, `SMData`, and `purityData`
+#' arguments respectively. **Note:** At this time, either all or none of these
+#' optional data types must be provided. Defaults to 'simple'.
+#' @param CNVData Specify a dataset containing CNV status for each of the top
+#' genes, as selected by the analysis type and 'topGeneNumber' arguments, in
+#' each sample in the TENETMultiAssayExperiment. CNV status must be an
+#' integer representing the change in copy number for each gene, with negative
+#' numbers representing a loss and positive numbers representing a gain.
+#' **Note:** Copy number changes of 2 or more will be grouped together. The
+#' dataset may be given as a data frame, matrix, or TSV file path. If it is a
+#' data frame or matrix, its rownames must contain sample names. If a TSV file
+#' is provided, the first column must contain sample names, and the first row
+#' must contain column headers. Sample names must match those in the colData of
+#' the TENETMultiAssayExperiment object. Column names must contain gene IDs
+#' followed by "_CNV". If set to NA, the data will be loaded from the colData of
+#' the TENETMultiAssayExperiment object. **Note:** If data are missing for a
+#' given gene, the plot will be generated without considering its CNV status.
+#' Defaults to NA, and is only considered if `simpleOrComplex` is set to
 #' "complex".
-#' @param SMData Specify the SM status for each of the top genes and each
-#' sample in the TENETMultiAssayExperiment. SM status should be given in the
-#' form as either 0 or 1, or "no mutation" or "mutation", indicating whether
-#' each sample harbors a somatic mutation for each of the top genes as
-#' determined by 'hypermethGplusAnalysis', hypomethGplusAnalysis', and
-#' 'topGeneNumber' settings. This argument can be given in the form of a data
-#' frame/matrix, or a path to a file that contains the SM data, or it can be set
-#' to NA. See the documentation for 'CNVData' for more information. Note: if a
-#' given gene is missing this information, then the plot will be generated
-#' without considering the SM status of that gene. Defaults to NA, and is only
-#' considered if 'simpleOrComplex' is set to "complex".
-#' @param purityData Specify the cellularity/purity data for samples in the
-#' TENETMultiAssayExperiment. Purity values should range from 0 to 1. This
-#' data can be given in a variety of forms, including a vector, data
-#' frame/matrix, or a path to a file that contains the purity data. If a vector
+#' @param SMData Specify a dataset containing the somatic mutation status for
+#' each of the top genes in each sample in the TENETMultiAssayExperiment. This
+#' argument behaves the same way as the `CNVData` argument, except that the
+#' names of the columns containing SM status must end with "_SM", and the status
+#' must be an integer 0 or 1 or a string "no mutation" or "mutation". Defaults
+#' to NA.
+#' @param purityData Specify the cellularity/purity data for each sample in the
+#' TENETMultiAssayExperiment. Purity values must range from 0 to 1. The dataset
+#' may be given as a vector, data frame, matrix, or TSV file path. If a vector
 #' is given, the names of the vector elements must correspond to the names of
 #' the samples in the rownames of the colData of the TENETMultiAssayExperiment
 #' object. If no names are provided for the vector, then the number of elements
-#' in the vector must equal the number of samples in the colData, and are
+#' in the vector must equal the number of samples in the colData, and it is
 #' assumed to align with the samples as they are ordered in the colData. If a
-#' data frame or matrix is given, then the rownames of the supplied data frame
-#' or matrix must include the sample names as they appear in the colData of the
-#' TENETMultiAssayExperiment object, and the first column of the data frame or
-#' matrix will be assumed to include the purity data. If a single string
-#' is provided, then it is assumed to be a path to a tab-delimited file
-#' containing purity data in the second column, and the names of the samples,
-#' again corresponding with the sample names in the colData, in the first
-#' column, which will be loaded as the row names. The first row of the file
-#' must contain column names. If this variable is set to NA, then the purity
-#' data will be assumed to already be contained in the colData of the
-#' TENETMultiAssayExperiment under a column titled "purity". Defaults to NA,
-#' and is only considered if 'simpleOrComplex' is set to "complex".
+#' data frame, matrix, or TSV file is given, it must be in the same format as
+#' for the `CNVData` argument, except that the first column of data (excluding
+#' the rownames) must contain the purity data. If this argument is set to NA,
+#' purity data will be loaded from the "purity" column of the colData of the
+#' TENETMultiAssayExperiment object. Defaults to NA, and is only considered if
+#' 'simpleOrComplex' is set to "complex".
 #' @param coreCount Argument passed as the mc.cores argument to mcmapply. See
 #' `?parallel::mcmapply` for more details. Defaults to 1.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of information
+#' TENETMultiAssayExperiment argument with an additional list
 #' named 'step7ExpressionVsDNAMethylationScatterplots' in its metadata with the
 #' output of this function. This list is subdivided into hypermethGplus or
 #' hypomethGplus results as selected by the user, which are further subdivided
 #' into lists with data for the top overall genes, and for top TF genes only.
-#' An additional list named 'selectedDNAMethylationSites' is also generated if
-#' the user has specified RE DNA methylation sites of interest to the RE DNA
-#' methylation sites argument of this function. Within each of these lists, a
-#' final list is generated for each of the top genes/TFs, or specified RE DNA
-#' methylation sites, which contains the scatterplots for each RE DNA
-#' methylation site linked to the top genes/TFs, or for each gene linked to the
-#' user specified REs if DNA methylation sites are specified, for each analysis
-#' type. In each scatterplot, the expression of the gene is plotted on the
-#' X-axis, and the methylation of the linked RE DNA methylation site is plotted
-#' on the Y-axis. If the user has opted to create complex plots, and the CNV
-#' and SM data are available for the plotted gene, the CNV and SM status for
-#' each case sample will be reflected in each point's symbol used (with SM
-#' status taking precedence over CNV), while the purity of each sample will be
-#' reflected in the size of the point.
+#' Each of these lists contains a final list for each of the top genes/TFs
+#' containing scatterplots for each RE DNA methylation site linked to the gene.
+#' If the user has specified RE DNA methylation sites of interest, an additional
+#' list named 'selectedDNAMethylationSites' is generated for each quadrant
+#' containing scatterplots for each gene linked to each specified RE DNA
+#' methylation site. In each scatterplot, the expression of the gene is plotted
+#' on the X-axis, and the methylation of the linked RE DNA methylation site is
+#' plotted on the Y-axis. If complex plots are being created, the CNV and SM
+#' status of each sample, if present, will be represented by each point's shape
+#' (with SM status taking precedence over CNV), and the purity of each sample
+#' will be reflected in each point's size.
 #'
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to create scatterplots for the top 10
-#' ## genes/TFs, by number of linked hyper- or hypomethylated RE DNA
+#' ## genes and TFs by number of linked hyper- and hypomethylated RE DNA
 #' ## methylation sites, showing expression of these genes and the DNA
 #' ## methylation level of their linked RE DNA methylation sites. Gene names
 #' ## will be retrieved from the rowRanges of the 'expression'
-#' ## SummarizedExperiment object in the example MultiAssayExperiment. Only
-#' ## simple scatterplots will be created. The analysis will be performed using
-#' ## one CPU core.
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. No CNV,
+#' ## SM, or purity data will be incorporated, and the analysis will be
+#' ## performed using one CPU core.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -514,31 +485,27 @@
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 #' )
 #'
-#' ## This example uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package to create scatterplots for only the top 5
-#' ## genes/TFs, by number of linked hypomethylated RE DNA methylation sites,
-#' ## as well as for a given vector with some example RE DNA methylation sites
-#' ## of interest. Gene names will be retrieved from the rowRanges of the
-#' ## 'expression' SummarizedExperiment object in the example
-#' ## MultiAssayExperiment. For each plot, complex scatterplots displaying each
-#' ## sample's CNV and SM status for the gene in the plot, as well as purity,
-#' ## where available. The gene CNV and SM status, as well as purity from each
-#' ## patient sample in the analyses, will be taken from specific columns
-#' ## present in the exampleTENETClinicalDataFrame object. The analysis will be
-#' ## performed using 8 CPU cores.
+#' ## This example demonstrates many of the analysis options, creating
+#' ## scatterplots for the top 5 genes/TFs as well as some example RE DNA
+#' ## methylation sites of interest. As before, gene names will be retrieved
+#' ## from the rowRanges of the 'expression' SummarizedExperiment object.
+#' ## Complex scatterplots are created which display each sample's CNV and SM
+#' ## status for each gene, as well as purity data, where available. The CNV,
+#' ## SM, and purity data will be taken from specific columns of the
+#' ## exampleTENETClinicalDataFrame object. The analysis will be performed using
+#' ## 8 CPU cores.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Again, this loads the data frame with example clinical data for patients
-#' ## in the TENET MultiAssayExperiment object from the TENET.ExperimentHub
-#' ## package
+#' ## Load the data frame with example clinical data for patients in the TENET
+#' ## MultiAssayExperiment object from the TENET.ExperimentHub package
 #' exampleTENETClinicalDataFrame <-
 #'     TENET.ExperimentHub::exampleTENETClinicalDataFrame()
 #'
-#' ## Use the example dataset to create the scatterplots
+#' ## Use the example datasets to create the scatterplots
 #' returnValue <- step7ExpressionVsDNAMethylationScatterplots(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     hypermethGplusAnalysis = FALSE,
@@ -551,17 +518,18 @@
 #'     coreCount = 8
 #' )
 step7ExpressionVsDNAMethylationScatterplots <- function(
-    TENETMultiAssayExperiment,
-    geneAnnotationDataset = NA,
-    hypermethGplusAnalysis = TRUE,
-    hypomethGplusAnalysis = TRUE,
-    topGeneNumber = 10,
-    DNAMethylationSites = NA,
-    simpleOrComplex = "simple",
-    CNVData = NA,
-    SMData = NA,
-    purityData = NA,
-    coreCount = 1) {
+  TENETMultiAssayExperiment,
+  geneAnnotationDataset = NA,
+  hypermethGplusAnalysis = TRUE,
+  hypomethGplusAnalysis = TRUE,
+  topGeneNumber = 10,
+  DNAMethylationSites = NA,
+  simpleOrComplex = "simple",
+  CNVData = NA,
+  SMData = NA,
+  purityData = NA,
+  coreCount = 1
+) {
     ## Validate the analysis types and get a vector of the ones selected
     analysisTypes <- .validateAnalysisTypes(
         hypermethGplusAnalysis, hypomethGplusAnalysis
@@ -570,7 +538,7 @@ step7ExpressionVsDNAMethylationScatterplots <- function(
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(
         TENETMultiAssayExperiment,
-        needGeneName = is.na(geneAnnotationDataset)
+        needGeneNames = is.na(geneAnnotationDataset)
     )
 
     ## Get gene IDs and names from the MAE, or gene annotation dataset if

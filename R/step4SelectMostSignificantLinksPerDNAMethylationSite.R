@@ -4,11 +4,13 @@
 ## removing links whose number of linked genes, or multiple-testing-corrected
 ## p-value, exceeds the given maximum
 .findSignificantLinksByMethSite <- function(
-    DNAMethylationSiteID,
-    quadrantResultsDF,
-    linksPerREDNAMethylationSiteMaximum,
-    multipleTestingPValue,
-    step3Metadata) {
+  DNAMethylationSiteID,
+  quadrantResultsDF,
+  linksPerREDNAMethylationSiteMaximum,
+  multipleTestingCorrectionMethod,
+  multipleTestingPValue,
+  step3Metadata
+) {
     ## Get the subset of links to this RE DNA methylation site
     methSiteLinks <- quadrantResultsDF[
         quadrantResultsDF$DNAMethylationSiteID %in% DNAMethylationSiteID,
@@ -23,12 +25,10 @@
     ## Sort the Z-scores so the most negative Z-scores are listed first
     methSiteLinks <- methSiteLinks[order(methSiteLinks$zScore), ]
 
-    ## Depending on the value of linksPerREDNAMethylationSiteMaximum, either
+    ## Depending on the value of multipleTestingCorrectionMethod, either
     ## get the most significant n links per RE DNA methylation site, or do a
     ## multiple testing correction on those links
-    if (linksPerREDNAMethylationSiteMaximum %in%
-        setdiff(stats::p.adjust.methods, "none")
-    ) {
+    if (!is.na(multipleTestingCorrectionMethod)) {
         ## Since the user wants to do a multiple testing correction based on
         ## the number of links to each unique RE DNA methylation site in the
         ## quadrant, first convert the Z-scores to p-values again
@@ -37,7 +37,7 @@
         ## Perform the multiple testing
         methSiteLinks$zScorePValueAdj <- stats::p.adjust(
             methSiteLinks$zScorePValue,
-            method = linksPerREDNAMethylationSiteMaximum
+            method = multipleTestingCorrectionMethod
         )
 
         ## Create a vector of the Z-scores with significant p-values after the
@@ -86,11 +86,13 @@
 }
 
 .restrictLinksPerMethSite <- function(
-    MAE,
-    hyperHypo,
-    linksPerREDNAMethylationSiteMaximum,
-    multipleTestingPValue,
-    coreCount) {
+  MAE,
+  hyperHypo,
+  linksPerREDNAMethylationSiteMaximum,
+  multipleTestingCorrectionMethod,
+  multipleTestingPValue,
+  coreCount
+) {
     ## Define the name of the results category in the MAE
     resultsCategory <- paste0(hyperHypo, "methResults")
 
@@ -153,6 +155,7 @@
         quadrantResultsDF = quadrantResults,
         linksPerREDNAMethylationSiteMaximum =
             linksPerREDNAMethylationSiteMaximum,
+        multipleTestingCorrectionMethod = multipleTestingCorrectionMethod,
         multipleTestingPValue = multipleTestingPValue,
         step3Metadata =
             MAE@metadata$step3GetAnalysisZScores$metadata,
@@ -171,9 +174,9 @@
 #' Select the most significant RE DNA methylation site-gene links to each RE DNA
 #' methylation site
 #'
-#' This function takes the calculated Z-scores for the hyper- or hypomethylated
-#' G+ RE DNA methylation site-gene links and selects the most significant links
-#' to each regulatory element DNA methylation site, either up to a number
+#' This function takes the calculated Z-scores for the hyper- and/or
+#' hypomethylated G+ RE DNA methylation site-gene links and selects the most
+#' significant links to each RE DNA methylation site, either up to a number
 #' specified by the user, or based on a significant p-value level set by the
 #' user after multiple testing correction is performed on the Z-scores output
 #' by the `step3GetAnalysisZScores` function per RE DNA methylation site in the
@@ -181,10 +184,9 @@
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
-#' one created by the TCGADownloader function. This MultiAssayExperiment object
-#' should also contain the results from the
-#' `step2GetDifferentiallyMethylatedSites` and `step3GetAnalysisZScores`
-#' functions in its metadata.
+#' one created by the TCGADownloader function. The object's metadata must
+#' contain the results from the `step2GetDifferentiallyMethylatedSites` and
+#' `step3GetAnalysisZScores` functions.
 #' @param hypermethGplusAnalysis Set to TRUE to analyze hypermethylated G+ RE
 #' DNA methylation site-gene links. Requires the hypermethAnalysis parameter to
 #' have been set to TRUE in step 3.
@@ -193,24 +195,27 @@
 #' been set to TRUE in step 3.
 #' @param linksPerREDNAMethylationSiteMaximum This parameter must either be set
 #' to an integer n greater than 0, in which case only the n most significant RE
-#' DNA methylation site-gene link pairs from step 3 will be selected per RE DNA
-#' methylation site, or a character string describing a multiple testing
-#' correction method supported by `p.adjust` (see `?stats::p.adjust`) to perform
-#' multiple testing correction on the Z-scores from step 3, using the
-#' multipleTestingPValue argument to set a significant p-value cutoff.
-#' **Note:** If multiple testing correction is performed, `sparseResults`
-#' should have been set to FALSE in the `step3GetAnalysisZScores` function.
-#' Defaults to 25 (maximum links per unique RE DNA methylation site).
+#' DNA methylation site-gene link pairs from step 3 will be selected per unique
+#' RE DNA methylation site, or NA if using the multipleTestingPValue argument to
+#' set a significant p-value cutoff. Defaults to 25.
+#' @param multipleTestingCorrectionMethod Specify a character string describing
+#' a multiple testing correction method supported by `p.adjust` (see
+#' `?stats::p.adjust`) to perform multiple testing correction on the Z-scores
+#' from step 3, using the `multipleTestingPValue` argument to specify the
+#' significant p-value cutoff, or specify NA to skip multiple testing
+#' correction, in which case `linksPerREDNAMethylationSiteMaximum` will be used
+#' to determine the number of links to retain. If specified,
+#' `linksPerREDNAMethylationSiteMaximum` will be ignored. Defaults to NA.
 #' @param multipleTestingPValue Cutoff for multiple testing corrected p-values.
-#' This argument is only used if the `linksPerREDNAMethylationSiteMaximum`
-#' argument is set to a multiple testing correction method. Defaults to 0.05.
+#' This argument is only used if the `multipleTestingCorrectionMethod` argument
+#' is specified. Defaults to 0.05.
 #' @param coreCount Argument passed as the mc.cores argument to mclapply. See
 #' `?parallel::mclapply` for more details. Defaults to 1.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of data named
-#' "step4SelectMostSignificantLinksPerDNAMethylationSite" in its metadata with
-#' the output of this function, which includes the most significant selected
-#' gene links to the hyper- or hypomethylated RE DNA methylation sites.
+#' TENETMultiAssayExperiment argument with an additional list named
+#' "step4SelectMostSignificantLinksPerDNAMethylationSite" in its metadata
+#' containing the most significant selected gene links to the hyper- and/or
+#' hypomethylated RE DNA methylation sites.
 #' @export
 #'
 #' @examplesIf interactive()
@@ -229,14 +234,14 @@
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 #' )
 #'
-#' ## This example also uses the example MultiAssayExperiment but identifies
+#' ## This example demonstrates many of the analysis options. It identifies
 #' ## the most significant links between only hypomethylated enhancer DNA
 #' ## methylation sites and all genes by performing Bonferroni multiple testing
 #' ## correction using a significant p-value of 0.10, using 8 CPU cores to
-#' ## perform the analysis. Note: running this code with the
-#' ## exampleTENETMultiAssayExperiment will produce a warning message as
-#' ## sparseResults was set to TRUE when the example dataset was generated.
-#' ## However, this function will still run and is valid as an example.
+#' ## perform the analysis. Note: Running this code with the
+#' ## exampleTENETMultiAssayExperiment will produce a warning message because
+#' ## sparseResults was set to TRUE when the example dataset was generated, but
+#' ## it is still valid as an example.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -247,25 +252,27 @@
 #' returnValue <- step4SelectMostSignificantLinksPerDNAMethylationSite(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     hypermethGplusAnalysis = FALSE,
-#'     linksPerREDNAMethylationSiteMaximum = "bonferroni",
+#'     multipleTestingCorrectionMethod = "bonferroni",
 #'     multipleTestingPValue = 0.1,
 #'     coreCount = 8
 #' )
 step4SelectMostSignificantLinksPerDNAMethylationSite <- function(
-    TENETMultiAssayExperiment,
-    hypermethGplusAnalysis = TRUE,
-    hypomethGplusAnalysis = TRUE,
-    linksPerREDNAMethylationSiteMaximum = 25,
-    multipleTestingPValue = 0.05,
-    coreCount = 1) {
+  TENETMultiAssayExperiment,
+  hypermethGplusAnalysis = TRUE,
+  hypomethGplusAnalysis = TRUE,
+  linksPerREDNAMethylationSiteMaximum = 25,
+  multipleTestingCorrectionMethod = NA,
+  multipleTestingPValue = 0.05,
+  coreCount = 1
+) {
     ## Validate the analysis types and get a vector of the ones selected
     analysisTypes <- .validateAnalysisTypes(
         hypermethGplusAnalysis, hypomethGplusAnalysis
     )
 
-    ## Validate the linksPerREDNAMethylationSiteMaximum value or the multiple
-    ## testing parameters
-    if (linksPerREDNAMethylationSiteMaximum %in%
+    ## Validate the multiple testing parameters or the
+    ## linksPerREDNAMethylationSiteMaximum value
+    if (multipleTestingCorrectionMethod %in%
         setdiff(stats::p.adjust.methods, "none")
     ) {
         ## multipleTestingPValue must be greater than 0 and less than 1, as
@@ -298,8 +305,7 @@ step4SelectMostSignificantLinksPerDNAMethylationSite <- function(
             )
         }
     } else {
-        ## If linksPerREDNAMethylationSiteMaximum is not set to a method
-        ## supported by stats::p.adjust, it must be greater than 0 and an
+        ## linksPerREDNAMethylationSiteMaximum must be greater than 0 and an
         ## integer
         if (!is.numeric(linksPerREDNAMethylationSiteMaximum) ||
             linksPerREDNAMethylationSiteMaximum <= 0 ||
@@ -311,11 +317,8 @@ step4SelectMostSignificantLinksPerDNAMethylationSite <- function(
                 "be set to an integer n greater than 0, in which case only ",
                 "the n most significant RE DNA methylation site-gene link ",
                 "pairs from step 3 will be selected per RE DNA methylation ",
-                "site, or a character string describing a multiple testing ",
-                "correction method supported by p.adjust (see ",
-                "?stats::p.adjust) to perform multiple testing correction on ",
-                "the Z-scores from step 3, using the multipleTestingPValue ",
-                "argument to set a significant p-value cutoff."
+                "site, or NA if using the multipleTestingPValue argument to ",
+                "set a significant p-value cutoff."
             )
         }
     }
@@ -350,6 +353,7 @@ step4SelectMostSignificantLinksPerDNAMethylationSite <- function(
             hyperHypo = hyperHypo,
             linksPerREDNAMethylationSiteMaximum =
                 linksPerREDNAMethylationSiteMaximum,
+            multipleTestingCorrectionMethod = multipleTestingCorrectionMethod,
             multipleTestingPValue = multipleTestingPValue,
             coreCount = coreCount
         )

@@ -28,21 +28,23 @@ easyTENET(
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects,
 such as one created by the TCGADownloader function. Coordinates for
-genes and DNA methylation sites should be included in the rowRanges
+genes and DNA methylation sites must be included in the rowRanges
 of their respective SummarizedExperiment objects and should be annotated
 to the human hg38 genome.
 An argument of all functions except \code{step1MakeExternalDatasets}.}
 
-\item{extHM}{To use custom histone modification datasets, specify a path
-to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-.gappedPeak files with these datasets. The files may optionally be compressed
-(.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
+\item{extHM}{To use custom histone modification datasets, specify one or more
+paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files containing
+these datasets, or directories containing these file types. The files may
+optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or do not
+specify this argument.
 An argument of the \code{step1MakeExternalDatasets} function.}
 
-\item{extNDR}{To use custom open chromatin or NDR datasets, specify a
-path to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-.gappedPeak files with these datasets. The files may optionally be compressed
-(.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
+\item{extNDR}{To use custom open chromatin or NDR datasets, specify one or
+more paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
+containing these datasets, or directories containing these file types. The
+files may optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or
+do not specify this argument.
 An argument of the \code{step1MakeExternalDatasets} function.}
 
 \item{consensusEnhancer}{Set to TRUE to use the consensus enhancer data
@@ -53,7 +55,7 @@ An argument of the \code{step1MakeExternalDatasets} function.}
 included in TENET.AnnotationHub. Defaults to FALSE.
 An argument of the \code{step1MakeExternalDatasets} function.}
 
-\item{consensusNDR}{Set to TRUE to use the consensus open chromatin
+\item{consensusNDR}{Set to TRUE to use the consensus open chromatin (NDR)
 data included in TENET.AnnotationHub. Defaults to TRUE.
 An argument of the \code{step1MakeExternalDatasets} function.}
 
@@ -73,8 +75,8 @@ TENET.AnnotationHub. If set to TRUE, \code{cancerType} must be specified.
 Defaults to FALSE. An argument of the \code{step1MakeExternalDatasets} function.}
 
 \item{cancerType}{If \code{publicEnhancer}, \code{publicPromoter}, and/or \code{publicNDR}
-is TRUE, specify a vector of cancer types from 'BLCA', 'BRCA', 'COAD',
-'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and 'THCA' to include the
+is TRUE, specify a vector of cancer types ('BLCA', 'BRCA', 'COAD',
+'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and/or 'THCA') to include the
 public data relevant to those cancer types. Defaults to NA.
 An argument of the \code{step1MakeExternalDatasets} function.}
 
@@ -98,14 +100,13 @@ An argument of the \code{step2GetDifferentiallyMethylatedSites} function.}
 \item{TSSDist}{Specify a positive integer distance in base pairs to any
 transcription start site within which DNA
 methylation sites are considered promoter DNA methylation sites. DNA
-methylation sites outside of the TSSDist from any transcription start site
+methylation sites outside this distance from any transcription start site
 will be considered enhancer methylation sites. Defaults to 1500.
 An argument of the \code{step2GetDifferentiallyMethylatedSites} function.}
 
-\item{minCaseCount}{Specify a positive integer to be the
-minimum number of case samples to be considered for the
-hyper- or hypomethylated groups. Should be less than the total number
-of case samples.
+\item{minCaseCount}{Specify the minimum number of case samples to be
+considered for the hyper- and hypomethylated groups. Must be a positive
+integer less than the total number of case samples.
 An argument of the \code{step2GetDifferentiallyMethylatedSites} function.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mclapply. See
@@ -132,7 +133,7 @@ relevant regulatory elements. All remaining arguments of the component
 functions are set to their default values.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example creates a dataset of putative enhancer regulatory elements
 ## from consensus datasets and breast invasive carcinoma-relevant sources
 ## collected in the TENET.AnnotationHub package, then runs the step 2 through
@@ -161,7 +162,7 @@ returnValue <- easyTENET(
 )
 
 ## This example creates a dataset of putative promoter regulatory elements
-## using bed-like files contained in the user's working directory, consensus
+## using BED-like files contained in the user's working directory, consensus
 ## NDR and promoter regions, and regions with promoter-like signatures from
 ## the ENCODE SCREEN project, but excluding cancer type-specific public
 ## datasets. This dataset is then used to analyze DNA methylation sites in

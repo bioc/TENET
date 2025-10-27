@@ -20,8 +20,8 @@ TCGADownloader(
 }
 \arguments{
 \item{rawDataDownloadDirectory}{Specify the path to the directory where
-TCGAbiolinks should download data. Note that this dataset can be very
-sizable.}
+TCGAbiolinks should download data. \strong{Note:} The downloaded files can be very
+large.}
 
 \item{GDCDownloadMethod}{The method to use when downloading data from the
 Genomic Data Commons (GDC). Passed as the \code{method} argument to TCGAbiolinks'
@@ -38,61 +38,60 @@ the "api" download method. Passed as the \code{files.per.chunk} argument to
 TCGAbiolinks' \code{GDCdownload} function. Lower values may improve download
 reliability, but higher values may increase download speed. Defaults to 10.}
 
-\item{TCGAStudyAbbreviation}{Input a four-letter code for a TCGA dataset
-for which to download data. See
+\item{TCGAStudyAbbreviation}{Specify the four-letter abbreviation of a TCGA
+dataset for which to download data. See
 \url{https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations}
 for more information and a complete list of options.}
 
 \item{RNASeqWorkflow}{Select the type of RNA-seq data to download. For
 TENET purposes, choose either "STAR - FPKM", "STAR - FPKM-UQ",
-"STAR - FPKM-UQ - old formula", or "STAR - TPM". "STAR - Counts" can also
+"STAR - FPKM-UQ - old formula", or "STAR - TPM". "STAR - Counts" may also
 be used but is not recommended for TENET analyses. See
 \url{https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/}
-for more information on these.}
+for the meaning of these options. "STAR - FPKM-UQ - old formula" is specific
+to TENET; it uses "STAR - FPKM-UQ", but multiplies the FPKM-UQ values
+by 19,029 (the number of human protein coding genes on autosomes), resulting
+in values similar to those TCGA used prior to Data Release 37.0 on March 29,
+2023. This allows the comparison of TCGA FPKM-UQ datasets downloaded before
+and after that date.}
 
-\item{RNASeqLog2Normalization}{Set to TRUE to do log2 normalization of
+\item{RNASeqLog2Normalization}{Set to TRUE to perform log2 normalization of
 RNA-seq expression values. Defaults to TRUE.}
 
 \item{removeDupTumor}{Set to TRUE to remove duplicate tumor samples
 taken from the same subject, leaving only one sample per subject in
 alphanumeric order. \strong{Note:} To properly create a dataset for use with
+TENET, both the \code{removeDupTumor} and \code{matchingExpAndMetSamples} arguments
+must be set to TRUE. Defaults to TRUE.}
+
+\item{matchingExpAndMetSamples}{If set to TRUE, only data for patients with
+at least one methylation and expression sample will be kept. If set to FALSE,
+all samples will be kept. \strong{Note:} To properly create a dataset for use with
 TENET, both the removeDupTumor and matchingExpAndMetSamples arguments must be
 set to TRUE. Defaults to TRUE.}
 
-\item{matchingExpAndMetSamples}{Select the type of expression and
-methylation sample data matching to perform. If set to TRUE, only samples
-with at least one methylation and expression sample annotated to their
-patient, will be kept. If set to FALSE, all samples will be kept, including
-those without matching expression and methylation data. \strong{Note:} To properly
-create a dataset for use with TENET, both the removeDupTumor and
-matchingExpAndMetSamples arguments must be set to TRUE. Defaults to TRUE.}
-
-\item{clinicalSurvivalData}{Select how clinical data should be prepared
-from the TCGA data, with respect to patient vital status and survival time.
-Valid options include "bcrBiotabPatient" to use survival data contained
-only in the 'patient' data in the BCR Biotab files downloaded using
-TCGAbiolinks, or "combined", which uses clinical information from the
-'patient' and 'follow_up' datasets in the BCR Biotab files, as well as data
-from the BCR XML files. Data from the same patient in each of the datasets
-are combined, and the data with the most recent (highest patient survival
-time) entry for each patient are kept. Additionally, for both options, the
-'days_to_last_followup' and 'days_to_death' variables are collapsed into a
-single time variable, which is combined with the other patient clinical data
-in the 'patient' BCR Biotab data. See
+\item{clinicalSurvivalData}{Select how patient vital status and survival time
+data should be extracted from the TCGA data. Specify "bcrBiotabPatient" to
+use survival data from only the 'patient' dataset in the BCR Biotab
+files downloaded using TCGAbiolinks, or "combined" to use survival data from
+the 'patient' and 'follow_up' datasets in the BCR Biotab files, as well as
+the BCR XML files. Data from the same patient in each of the datasets
+are combined, and the most recent entry (highest patient survival time) for
+each patient is kept. For both options, the 'days_to_last_followup' and
+'days_to_death' variables are collapsed into a single time variable, which is
+combined with the other clinical data in the 'patient' BCR Biotab data. See
 \url{https://bioconductor.org/packages/devel/bioc/vignettes/TCGAbiolinks/inst/doc/clinical.html}
-for more information on how TCGAbiolinks prepares different clinical
-datasets. Defaults to "combined".}
+for more information on how TCGAbiolinks prepares clinical datasets. Defaults
+to "combined".}
 
-\item{outputFile}{Specify the path to an .rda file in which to save the
-MultiAssayExperiment object with downloaded datasets. If set to NA or
-undefined, this results in the function only returning the
-MultiAssayExperiment object and not saving it. Defaults to NA.}
+\item{outputFile}{Specify the path to an \code{.rda} file in which to save the
+created MultiAssayExperiment object. If set to NA, the object is only
+returned. Defaults to NA.}
 }
 \value{
-Returns and/or saves to an .rda file a MultiAssayExperiment
-object with expression and methylation data included SummarizedExperiment
-objects within the MultiAssayExperiment object, as well as clinical data
-included in the colData of the MultiAssayExperiment object.
+Returns a MultiAssayExperiment object containing SummarizedExperiment
+objects with expression and methylation data, as well as clinical data in its
+colData.
 }
 \description{
 This function downloads and compiles TCGA gene expression and DNA
@@ -101,32 +100,31 @@ with the TENET package. This simplifies the TCGAbiolinks download functions,
 identifies samples with matching gene expression and DNA methylation data,
 and can also remove duplicate tumor samples taken from the same patient
 donor. Data are compiled into a MultiAssayExperiment object, which is
-returned and optionally saved in an .rda file at the path specified by the
+returned and optionally saved in an \code{.rda} file at the path specified by the
 \code{outputFile} argument.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-## Download a TCGA LUAD dataset with log2-normalized
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+## This example downloads a TCGA LUAD dataset with log2-normalized
 ## FPKM-UQ expression values from tumor and adjacent normal tissue samples
-## with matching expression and methylation data and keeping only one tumor
-## sample from each patient. Additionally, survival data will be combined
-## from three clinical datasets downloaded by TCGAbiolinks. Raw data files
-## will be saved to the working directory, and the processed dataset will
-## be returned as a variable.
+## with matching expression and methylation data, keeping only one tumor
+## sample from each patient. Survival data will be combined from three
+## clinical datasets downloaded by TCGAbiolinks. Raw data files will be saved
+## to the R working directory, and the processed dataset will only be
+## returned as a variable.
 TCGADataset <- TCGADownloader(
     rawDataDownloadDirectory = ".",
     TCGAStudyAbbreviation = "LUAD",
     RNASeqWorkflow = "STAR - FPKM-UQ"
 )
 
-## Another example, which downloads a TCGA BRCA dataset with FPKM expression
-## values with no normalization and no duplicate samples removed. Survival
-## data are derived from just the patient BCR Biotab file downloaded by
+## This example downloads a TCGA BRCA dataset with FPKM expression values
+## with no normalization and does not remove duplicate samples. Survival
+## data are derived from only the patient BCR Biotab file downloaded by
 ## TCGAbiolinks. Both raw data files and an .rda file containing the data
-## as a MultiAssayExperiment object will be saved to the working directory.
-## Note: This functionality is useful for downloading samples from
-## TCGA but will *not* work for a TENET assay due to the lack of sample
-## matching and duplicate tumor sample removal.
+## as a MultiAssayExperiment object will be saved to the R working directory.
+## Note: The resulting object will *not* work for a TENET analysis due to the
+## lack of sample matching and duplicate tumor sample removal.
 TCGADownloader(
     rawDataDownloadDirectory = ".",
     TCGAStudyAbbreviation = "BRCA",

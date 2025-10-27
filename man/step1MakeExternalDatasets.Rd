@@ -22,15 +22,17 @@ step1MakeExternalDatasets(
 )
 }
 \arguments{
-\item{extHM}{To use custom histone modification datasets, specify a path
-to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-.gappedPeak files with these datasets. The files may optionally be compressed
-(.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.}
+\item{extHM}{To use custom histone modification datasets, specify one or more
+paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files containing
+these datasets, or directories containing these file types. The files may
+optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or do not
+specify this argument.}
 
-\item{extNDR}{To use custom open chromatin or NDR datasets, specify a
-path to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-.gappedPeak files with these datasets. The files may optionally be compressed
-(.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.}
+\item{extNDR}{To use custom open chromatin or NDR datasets, specify one or
+more paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
+containing these datasets, or directories containing these file types. The
+files may optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or
+do not specify this argument.}
 
 \item{consensusEnhancer}{Set to TRUE to use the consensus enhancer data
 included in TENET.AnnotationHub. Defaults to TRUE.}
@@ -38,7 +40,7 @@ included in TENET.AnnotationHub. Defaults to TRUE.}
 \item{consensusPromoter}{Set to TRUE to use the consensus promoter data
 included in TENET.AnnotationHub. Defaults to FALSE.}
 
-\item{consensusNDR}{Set to TRUE to use the consensus open chromatin
+\item{consensusNDR}{Set to TRUE to use the consensus open chromatin (NDR)
 data included in TENET.AnnotationHub. Defaults to TRUE.}
 
 \item{publicEnhancer}{Set to TRUE to use the preprocessed publicly available
@@ -55,8 +57,8 @@ TENET.AnnotationHub. If set to TRUE, \code{cancerType} must be specified.
 Defaults to FALSE.}
 
 \item{cancerType}{If \code{publicEnhancer}, \code{publicPromoter}, and/or \code{publicNDR}
-is TRUE, specify a vector of cancer types from 'BLCA', 'BRCA', 'COAD',
-'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and 'THCA' to include the
+is TRUE, specify a vector of cancer types ('BLCA', 'BRCA', 'COAD',
+'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and/or 'THCA') to include the
 public data relevant to those cancer types. Defaults to NA.}
 
 \item{ENCODEPLS}{Set to TRUE to use the ENCODE promoter-like elements
@@ -76,7 +78,7 @@ This function creates a GRanges object containing regions representing
 putative regulatory elements, either enhancers or promoters, of
 interest to the user, based on the presence of specific histone marks
 and open chromatin/nucleosome-depleted regions. This function can take input
-from user-specified bed-like files (see
+from user-specified BED-like files (see
 \url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}) containing regions with
 histone modification (via the \code{extHM} argument) and/or open
 chromatin/nucleosome-depleted regions (via the \code{extNDR} argument), as well
@@ -89,7 +91,7 @@ TENET.AnnotationHub requires an internet connection, as those datasets are
 hosted in the Bioconductor AnnotationHub Data Lake.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example creates a dataset of putative enhancer regulatory elements
 ## from consensus datasets and breast invasive carcinoma-relevant sources
 ## collected in the TENET.AnnotationHub package.
@@ -103,7 +105,7 @@ returnGRanges <- step1MakeExternalDatasets(
 )
 
 ## This example creates a dataset of putative promoter regulatory elements
-## using user provided bed-like files contained in the working
+## using user provided BED-like files contained in the working
 ## directory, consensus NDR and promoter regions, and regions with
 ## promoter-like signatures from the ENCODE SCREEN project. This excludes any
 ## cancer type-specific public datasets.

@@ -3,10 +3,9 @@
 \name{step7TopGenesTADTables}
 \alias{step7TopGenesTADTables}
 \title{Create tables using user-supplied topologically associating domain (TAD)
-information which identify the topologically associating domains
-containing each RE DNA methylation site linked to the top genes/transcription
-factors, as well as other genes in the same topologically associating domain
-as potential downstream targets}
+information which identify the TADs containing each RE DNA methylation site
+linked to the top genes and transcription factors, as well as other genes in
+the same TAD as potential downstream targets}
 \usage{
 step7TopGenesTADTables(
   TENETMultiAssayExperiment,
@@ -22,19 +21,17 @@ step7TopGenesTADTables(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the \code{step5OptimizeLinks} and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in its metadata.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step5OptimizeLinks} and
+\code{step6DNAMethylationSitesPerGeneTabulation} functions.}
 
 \item{TADFiles}{Specify a data frame, matrix, or GRanges object with
-information on the TAD compartments of interest, organized in a bed-like
+information on the TAD compartments of interest, organized in a BED-like
 manner (see \url{https://genome.ucsc.edu/FAQ/FAQformat.html#format1}), or a path
-to a directory that contains bed-like files that contain such TAD
-information. If a path is provided, multiple bed-formatted TAD files can be
-included in the specified directory. The files may optionally be compressed
-(.gz/.bz2/.xz). \strong{Note:} Data frames and matrices will be assumed to use
-1-indexed coordinates; \code{rtracklayer::import.bed} converts coordinates to
-1-indexed upon import.}
+to a directory that contains \emph{only} one or more BED-like files, which may
+optionally be compressed (.gz/.bz2/.xz). \strong{Note:} Data frames and matrices
+must contain 1-indexed coordinates, and BED-like files must contain
+0-indexed coordinates.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -43,7 +40,7 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
@@ -58,16 +55,16 @@ only those overlapping will be considered for analysis. If set to NA, all RE
 DNA methylation sites with locations listed in the rowRanges of the
 "methylation" SummarizedExperiment object are used. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to create TAD tables for the RE
-DNA methylation sites linked to the top genes/TFs by most hypermethylated RE
+\item{hypermethGplusAnalysis}{Set to TRUE to create TAD tables for the RE DNA
+methylation sites linked to the top genes and TFs by most hypermethylated RE
 DNA methylation sites with G+ links.}
 
 \item{hypomethGplusAnalysis}{Set to TRUE to create TAD tables for the RE DNA
-methylation sites linked to the top genes/TFs by most hypomethylated RE DNA
-methylation sites with G+ links.}
+methylation sites linked to the top genes and TFs by most hypomethylated RE
+DNA methylation sites with G+ links.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
-linked RE DNA methylation sites of a given analysis type, for which to
+\item{topGeneNumber}{Specify the number of top genes and TFs, based on the
+most linked RE DNA methylation sites of a given analysis type, for which to
 generate TAD tables for the RE DNA methylation sites linked to those genes.
 Defaults to 10.}
 
@@ -76,35 +73,33 @@ Defaults to 10.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesTADTables' in its metadata with the output of this
-function. This list is subdivided into hypermethGplus or hypomethGplus
-results as selected by the user, which are further subdivided into data
-frames with data for the unique RE DNA methylation sites linked to the top
-overall genes, and for top TF genes only. This includes the top genes/TFs
-each RE DNA methylation site is linked to, and, for each TAD file, if an RE
+TENETMultiAssayExperiment argument with an additional list named
+'step7TopGenesTADTables' in its metadata containing the output of this
+function. This list contains  \code{hypermethGplus} and/or \code{hypomethGplus} lists,
+as selected by the user, which contain lists for the top overall genes and
+top TF genes. These lists contain data frames listing the top genes/TFs each
+RE DNA methylation site is linked to and, for each TAD file, whether an RE
 DNA methylation site was found in a TAD in that file, as well as the gene
 count and identities of other genes found in the same TAD as each RE DNA
 methylation site.
 }
 \description{
-This function takes the top genes/transcription factors (TFs) by number of
-linked RE DNA methylation sites identified by the
-\code{step6DNAMethylationSitesPerGeneTabulation} function up to the number
-specified by the user and generates tables with information for each of the
-RE DNA methylation sites linked to them for both of the hyper- or
-hypomethylated G+ analysis quadrants, as selected by the user. These tables
-note which of the top genes/TFs each RE DNA methylation site is linked to,
-as well as the total number and names of genes which happen to lie within
-the same topologically associating domain (TAD) of each RE DNA methylation
-site in each of the user-supplied TAD files.
+This function takes the top genes and transcription factors (TFs) by number
+of linked RE DNA methylation sites identified by the
+\code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
+specified by the user, and generates tables for each of the RE DNA
+methylation sites linked to them in the hyper- and/or hypomethylated
+G+ analysis quadrants, as selected by the user. These tables note which of
+the top genes/TFs each RE DNA methylation site is linked to, which TAD each
+site lies within, and the number and names of genes which lie within the same
+TAD.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to do overlapping for all unique RE DNA
-## methylation sites linked to the top 10 genes, by number of linked hyper-
-## or hypomethylated RE DNA methylation sites, using a GRanges object
+## methylation sites linked to the top 10 genes by number of linked hyper-
+## and hypomethylated RE DNA methylation sites, using a GRanges object
 ## containing topologically associating domain (TAD) data from the
 ## TENET.ExperimentHub package. Gene names and locations, and the locations
 ## of RE DNA methylation sites, will be retrieved from the rowRanges of the
@@ -120,23 +115,20 @@ exampleTENETMultiAssayExperiment <-
 ## Load the example TAD GRanges object from the TENET.ExperimentHub package
 exampleTENETTADRegions <- TENET.ExperimentHub::exampleTENETTADRegions()
 
-## Use the example datasets to do the TAD overlapping
+## Use the example datasets to perform the TAD overlapping
 returnValue <- step7TopGenesTADTables(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     TADFiles = exampleTENETTADRegions
 )
 
-## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to do overlapping for all unique RE DNA
-## methylation sites linked to the top 5 genes only, by number of linked
-## hypomethylated RE DNA methylation sites only, with bed-like files
-## containing topologically associating domain (TAD) data located in the
-## user's R working directory. This analysis will be done using gene names
-## and their locations which are included in the "geneName" column of the
-## elementMetadata of the rowRanges of the "expression" SummarizedExperiment
-## object within the TENETMultiAssayExperiment object, and RE DNA
-## methylation sites and their locations which are included in the HM450
-## array retrieved via the sesameData package. The analysis will be
+## This example also uses the example MultiAssayExperiment, but performs
+## overlapping for only RE DNA methylation sites linked to the top 5 genes by
+## number of linked hypomethylated RE DNA methylation sites. BED-like files
+## containing TAD data are retrieved from the directory "TADData". Gene names
+## and locations are retrieved from the rowRanges of the 'expression' and
+## 'methylation' SummarizedExperiment objects in the example
+## MultiAssayExperiment, and RE DNA methylation sites and their locations are
+## retrieved from the HM450 array via the sesameData package. The analysis is
 ## performed using 8 CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object
@@ -144,10 +136,10 @@ returnValue <- step7TopGenesTADTables(
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to do the TAD overlapping
+## Use the example dataset to perform the TAD overlapping
 returnValue <- step7TopGenesTADTables(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
-    TADFiles = ".",
+    TADFiles = "TADData",
     DNAMethylationArray = "HM450",
     hypermethGplusAnalysis = FALSE,
     topGeneNumber = 5,

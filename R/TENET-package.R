@@ -16,10 +16,11 @@
 #' tools to aid in the visualization and analysis of the results, including
 #' plots displaying and comparing methylation and expression data and RE DNA
 #' methylation site link counts, survival analysis, TF motif searching in the
-#' vicinity of linked RE DNA methylation sites, custom TAD and peak overlap
-#' analysis, and UCSC Genome Browser track file generation. A utility function
-#' is also provided to download methylation, expression, and patient survival
-#' data from The Cancer Genome Atlas (TCGA) for use in TENET or other analyses.
+#' vicinity of linked and specified RE DNA methylation sites and within
+#' specified regions, custom TAD and peak overlap analysis, and UCSC Genome
+#' Browser track  file generation. A utility function is also provided to
+#' download methylation, expression, and patient survival data from The Cancer
+#' Genome Atlas (TCGA) for use in TENET or other analyses.
 #' @docType package
 #' @name TENET
 #' @importFrom TENET.ExperimentHub exampleTENETTADRegions

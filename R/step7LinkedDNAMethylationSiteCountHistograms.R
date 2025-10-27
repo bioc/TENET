@@ -2,7 +2,8 @@
 
 ## Internal function to generate a histogram for the given quadrant
 .generateQuadrantHistogram <- function(
-    hyperHypo, geneOrTF, TENETMultiAssayExperiment, quadrantResultsName) {
+  hyperHypo, geneOrTF, TENETMultiAssayExperiment, quadrantResultsName
+) {
     ## Ensure the quadrant's results are present in step 6
     .ensureStepPresent(
         TENETMultiAssayExperiment,
@@ -68,40 +69,42 @@
 
 ## Main step7LinkedDNAMethylationSiteCountHistograms function
 
-#' Create histograms displaying the number of genes or transcription factors
-#' linked to a given number of RE DNA methylation sites
+#' Create histograms displaying the number of total genes and transcription
+#' factor genes linked to a given number of RE DNA methylation sites
 #'
-#' This function generates histograms displaying the number of all genes,
-#' or transcription factor (TF) genes only, with links to a given number of
-#' regulatory element DNA methylation sites from both of the hyper- or
-#' hypomethylated G+ analysis quadrants, as selected by the user.
+#' This function generates histograms displaying the number of total genes
+#' and transcription factor (TF) genes with links to a given number of
+#' regulatory element DNA methylation sites from the hyper- and/or
+#' hypomethylated G+ analysis quadrants.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
-#' one created by the TCGADownloader function. This MultiAssayExperiment object
-#' should also contain the results from the
-#' step6DNAMethylationSitesPerGeneTabulation function in its metadata.
-#' @param hypermethGplusAnalysis Set to TRUE to create histograms of genes/TFs
+#' one created by the TCGADownloader function. The object's metadata
+#' must contain the results from the `step6DNAMethylationSitesPerGeneTabulation`
+#' function.
+#' @param hypermethGplusAnalysis Set to TRUE to create histograms of genes
 #' linked to hypermethylated RE DNA methylation sites with G+ links. Defaults
 #' to TRUE.
-#' @param hypomethGplusAnalysis Set to TRUE to create histograms of genes/TFs
+#' @param hypomethGplusAnalysis Set to TRUE to create histograms of genes
 #' linked to hypomethylated RE DNA methylation sites with G+ links. Defaults to
 #' TRUE.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of information
-#' named 'step7LinkedDNAMethylationSiteCountHistograms' in its metadata with
-#' the output of this function. This list is subdivided into hypermethGplus or
-#' hypomethGplus results as selected by the user. Each of these contains a
-#' histogram displaying the number of all genes, or TFs only, linked to a given
-#' number of RE DNA methylation sites in each of the selected analysis
-#' quadrants.
+#' TENETMultiAssayExperiment argument with an additional list named
+#' 'step7LinkedDNAMethylationSiteCountHistograms' in its metadata, which is
+#' subdivided into `hypermethGplus` and/or `hypomethGplus` lists as selected by
+#' the user. Each of these contains histograms displaying the number of total
+#' genes and TF genes linked to a given number of RE DNA methylation sites in
+#' each of the selected analysis quadrants.
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package to create histograms displaying counts of
-#' ## genes/TFs by the number of linked hyper- or hypomethylated G+ RE DNA
-#' ## methylation sites.
+#' ## TENET.ExperimentHub package to create histograms displaying the number of
+#' ## total genes and TF genes linked to a given number of hyper- and
+#' ## hypomethylated G+ RE DNA methylation sites.
+#' ## Since we performed analyses using only TFs in the step 3 function, the
+#' ## top genes are all TFs, so a message that separate output for
+#' ## TFs will be skipped is displayed.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -114,10 +117,8 @@
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 #' )
 #'
-#' ## This example also uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package, but only creates a histogram of counts of
-#' ## genes/TFs by the number of linked hypomethylated G+ RE DNA methylation
-#' ## sites.
+#' ## This example does the same, but only analyzes hypomethylated G+ RE DNA
+#' ## methylation sites.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -125,15 +126,16 @@
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
 #' ## Use the example dataset to create the RE DNA methylation site count
-#' ## histograms
+#' ## histogram
 #' returnValue <- step7LinkedDNAMethylationSiteCountHistograms(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     hypermethGplusAnalysis = FALSE
 #' )
 step7LinkedDNAMethylationSiteCountHistograms <- function(
-    TENETMultiAssayExperiment,
-    hypermethGplusAnalysis = TRUE,
-    hypomethGplusAnalysis = TRUE) {
+  TENETMultiAssayExperiment,
+  hypermethGplusAnalysis = TRUE,
+  hypomethGplusAnalysis = TRUE
+) {
     ## Validate the analysis types and get a vector of the ones selected
     analysisTypes <- .validateAnalysisTypes(
         hypermethGplusAnalysis, hypomethGplusAnalysis

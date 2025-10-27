@@ -15,19 +15,21 @@
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects,
 #' such as one created by the TCGADownloader function. Coordinates for
-#' genes and DNA methylation sites should be included in the rowRanges
+#' genes and DNA methylation sites must be included in the rowRanges
 #' of their respective SummarizedExperiment objects and should be annotated
 #' to the human hg38 genome.
 #' An argument of all functions except `step1MakeExternalDatasets`.
-#' @param extHM To use custom histone modification datasets, specify a path
-#' to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-#' .gappedPeak files with these datasets. The files may optionally be compressed
-#' (.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
+#' @param extHM To use custom histone modification datasets, specify one or more
+#' paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files containing
+#' these datasets, or directories containing these file types. The files may
+#' optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or do not
+#' specify this argument.
 #' An argument of the `step1MakeExternalDatasets` function.
-#' @param extNDR To use custom open chromatin or NDR datasets, specify a
-#' path to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-#' .gappedPeak files with these datasets. The files may optionally be compressed
-#' (.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
+#' @param extNDR To use custom open chromatin or NDR datasets, specify one or
+#' more paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
+#' containing these datasets, or directories containing these file types. The
+#' files may optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or
+#' do not specify this argument.
 #' An argument of the `step1MakeExternalDatasets` function.
 #' @param consensusEnhancer Set to TRUE to use the consensus enhancer data
 #' included in TENET.AnnotationHub. Defaults to TRUE.
@@ -35,7 +37,7 @@
 #' @param consensusPromoter Set to TRUE to use the consensus promoter data
 #' included in TENET.AnnotationHub. Defaults to FALSE.
 #' An argument of the `step1MakeExternalDatasets` function.
-#' @param consensusNDR Set to TRUE to use the consensus open chromatin
+#' @param consensusNDR Set to TRUE to use the consensus open chromatin (NDR)
 #' data included in TENET.AnnotationHub. Defaults to TRUE.
 #' An argument of the `step1MakeExternalDatasets` function.
 #' @param publicEnhancer Set to TRUE to use the preprocessed publicly available
@@ -51,8 +53,8 @@
 #' TENET.AnnotationHub. If set to TRUE, `cancerType` must be specified.
 #' Defaults to FALSE. An argument of the `step1MakeExternalDatasets` function.
 #' @param cancerType If `publicEnhancer`, `publicPromoter`, and/or `publicNDR`
-#' is TRUE, specify a vector of cancer types from 'BLCA', 'BRCA', 'COAD',
-#' 'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and 'THCA' to include the
+#' is TRUE, specify a vector of cancer types ('BLCA', 'BRCA', 'COAD',
+#' 'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and/or 'THCA') to include the
 #' public data relevant to those cancer types. Defaults to NA.
 #' An argument of the `step1MakeExternalDatasets` function.
 #' @param ENCODEPLS Set to TRUE to use the ENCODE promoter-like elements
@@ -71,13 +73,12 @@
 #' @param TSSDist Specify a positive integer distance in base pairs to any
 #' transcription start site within which DNA
 #' methylation sites are considered promoter DNA methylation sites. DNA
-#' methylation sites outside of the TSSDist from any transcription start site
+#' methylation sites outside this distance from any transcription start site
 #' will be considered enhancer methylation sites. Defaults to 1500.
 #' An argument of the `step2GetDifferentiallyMethylatedSites` function.
-#' @param minCaseCount Specify a positive integer to be the
-#' minimum number of case samples to be considered for the
-#' hyper- or hypomethylated groups. Should be less than the total number
-#' of case samples.
+#' @param minCaseCount Specify the minimum number of case samples to be
+#' considered for the hyper- and hypomethylated groups. Must be a positive
+#' integer less than the total number of case samples.
 #' An argument of the `step2GetDifferentiallyMethylatedSites` function.
 #' @param coreCount Argument passed as the mc.cores argument to mclapply. See
 #' `?parallel::mclapply` for more details. Defaults to 1.
@@ -117,7 +118,7 @@
 #' )
 #'
 #' ## This example creates a dataset of putative promoter regulatory elements
-#' ## using bed-like files contained in the user's working directory, consensus
+#' ## using BED-like files contained in the user's working directory, consensus
 #' ## NDR and promoter regions, and regions with promoter-like signatures from
 #' ## the ENCODE SCREEN project, but excluding cancer type-specific public
 #' ## datasets. This dataset is then used to analyze DNA methylation sites in
@@ -145,23 +146,24 @@
 #'     coreCount = 8
 #' )
 easyTENET <- function(
-    TENETMultiAssayExperiment,
-    extHM = NA,
-    extNDR = NA,
-    consensusEnhancer = TRUE,
-    consensusPromoter = FALSE,
-    consensusNDR = TRUE,
-    publicEnhancer = FALSE,
-    publicPromoter = FALSE,
-    publicNDR = FALSE,
-    cancerType = NA,
-    ENCODEPLS = FALSE,
-    ENCODEpELS = FALSE,
-    ENCODEdELS = FALSE,
-    assessPromoter = FALSE,
-    TSSDist = 1500,
-    minCaseCount,
-    coreCount = 1) {
+  TENETMultiAssayExperiment,
+  extHM = NA,
+  extNDR = NA,
+  consensusEnhancer = TRUE,
+  consensusPromoter = FALSE,
+  consensusNDR = TRUE,
+  publicEnhancer = FALSE,
+  publicPromoter = FALSE,
+  publicNDR = FALSE,
+  cancerType = NA,
+  ENCODEPLS = FALSE,
+  ENCODEpELS = FALSE,
+  ENCODEdELS = FALSE,
+  assessPromoter = FALSE,
+  TSSDist = 1500,
+  minCaseCount,
+  coreCount = 1
+) {
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(TENETMultiAssayExperiment)
 
@@ -202,7 +204,7 @@ easyTENET <- function(
 
     ## Run the step3GetAnalysisZScores function on the TENETMultiAssayExperiment
     ## to calculate Z-scores comparing the mean expression of each gene in the
-    ## case samples that are hyper- or hypomethylated for each RE DNA
+    ## case samples that are hyper- and hypomethylated for each RE DNA
     ## methylation site, using default arguments other than the specified
     ## coreCount value
     TENETMultiAssayExperiment <- TENET::step3GetAnalysisZScores(
@@ -222,7 +224,7 @@ easyTENET <- function(
 
     ## Run the step5OptimizeLinks function on the TENETMultiAssayExperiment to
     ## find final RE DNA methylation site-gene links using various optimization
-    ## metrics and using default arguments other than the specified coreCount
+    ## metrics, using default arguments other than the specified coreCount
     ## value
     TENETMultiAssayExperiment <- TENET::step5OptimizeLinks(
         TENETMultiAssayExperiment = TENETMultiAssayExperiment,

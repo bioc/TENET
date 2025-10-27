@@ -29,10 +29,9 @@
 #'
 #' This function identifies DNA methylation sites that mark putative regulatory
 #' elements (REs), including enhancer and promoter regions. These are sites
-#' that lie within regions with specific histone modifications and open
-#' chromatin regions, from a user-supplied GRanges object, such as one created
-#' by the `step1MakeExternalDatasets` function, and which are located at a
-#' user-specified distance relative to the transcription start sites (TSS)
+#' that lie within regions from a user-supplied GRanges object, such as one
+#' created by the `step1MakeExternalDatasets` function, and which are located at
+#' a user-specified distance relative to the transcription start sites (TSS)
 #' listed in either the rowRanges of the elementMetadata of the "expression"
 #' SummarizedExperiment in the TENETMultiAssayExperiment object, or the
 #' selected `geneAnnotationDataset` (which will be filtered to only genes and
@@ -49,9 +48,9 @@
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects,
 #' such as one created by the TCGADownloader function. Coordinates for
-#' genes and DNA methylation sites should be included in the rowRanges
+#' genes and DNA methylation sites must be included in the rowRanges
 #' of their respective SummarizedExperiment objects and should be annotated
-#' from the same genome build as the regions given in the
+#' to the same genome build as the regions given in the
 #' regulatoryElementGRanges object.
 #' @param regulatoryElementGRanges Specify a GRanges object containing genomic
 #' regions representing regulatory elements of interest to the user.
@@ -91,7 +90,7 @@
 #' @param TSSDist Specify a positive integer distance in base pairs to any
 #' transcription start site (see `geneAnnotationDataset`) within which DNA
 #' methylation sites are considered promoter DNA methylation sites. DNA
-#' methylation sites outside of the TSSDist from any transcription start site
+#' methylation sites outside this distance from any transcription start site
 #' will be considered enhancer methylation sites. Defaults to 1500.
 #' @param purityData Specify a SummarizedExperiment object which contains DNA
 #' methylation datasets collected from potential cell types which might affect
@@ -116,47 +115,47 @@
 #' @param unmethCutoff Specify a number from 0 to 1 to be the beta-value cutoff
 #' for unmethylated RE DNA methylation sites. If unspecified or NA, an
 #' algorithm will be used to find the optimal cutoff value.
-#' @param methUnmethProportionOffset Specify a number from 0 to 1 to be
-#' the proportion of the distance of the region between the first and last
+#' @param methUnmethProportionOffset Specify a number from 0 to 1 indicating a
+#' proportion of the size of the region between the first and last
 #' local maxima in the density plot of the mean methylation values of the
-#' RE DNA methylation sites in the control samples. This value is then added
-#' to the position of these local maxima to set the unmethylation and
-#' methylation cutoffs if they are not defined by the user. The value ideally
-#' should not exceed 0.5. Defaults to 0.2.
+#' RE DNA methylation sites in the control samples. This proportion will be
+#' added to or subtracted from the position of these local maxima to set the
+#' unmethylation and methylation cutoffs, respectively, if they are not defined
+#' by the user. Ideally should not exceed 0.5. Defaults to 0.2.
 #' @param hypomethHypermethProportionOffset Specify a number from 0 to 1
-#' to be the proportion of the distance of the region between the first and
+#' indicating a proportion of the size of the region between the first and
 #' last local maxima in the density plot of the mean methylation values
-#' of the RE DNA methylation sites in the case samples. This value is then
-#' added to the calculated unmethylation and methylation cutoffs to then set
-#' the hypermethylation and hypomethylation cutoffs if they are not defined by
-#' the user. The value ideally should not exceed 0.5. Defaults to 0.1.
-#' @param minCaseCount Specify a positive integer to be the
-#' minimum number of case samples to be considered for the
-#' hyper- or hypomethylated groups. Should be less than the total number
-#' of case samples.
+#' of the RE DNA methylation sites in the case samples. This proportion will be
+#' added to or subtracted from the calculated unmethylation and methylation
+#' cutoffs to set the hypermethylation and hypomethylation cutoffs,
+#' respectively, if they are not defined by the user. Ideally should not exceed
+#' 0.5. Defaults to 0.1.
+#' @param minCaseCount Specify the minimum number of case samples to be
+#' considered for the hyper- and/or hypomethylated groups. Must be a positive
+#' integer less than the total number of case samples.
 #' @param cgDNAMethylationSitesOnly Set to TRUE to include only RE DNA
 #' methylation sites with IDs that start with "cg". TRUE means that RE DNA
 #' methylation sites whose IDs do not start with "cg" will be removed from
 #' TENET analyses. Defaults to TRUE.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of data named
-#' "step2GetDifferentiallyMethylatedSites" in its metadata with the output data
-#' from this function. These data include the set of calculated cutoff values,
+#' TENETMultiAssayExperiment argument with an additional list named
+#' "step2GetDifferentiallyMethylatedSites" in its metadata containing the output
+#' of this function. These data include the set of calculated cutoff values,
 #' the identities and counts of the classified RE DNA methylation sites, as
 #' well as plots of the mean methylation distributions of the identified
 #' regulatory element DNA methylation sites in the case and control samples and
-#' the set cutoff values. Of note for plots, if assessPromoter is TRUE, two
-#' distribution plots are saved, one using all promoter DNA methylation sites,
-#' and one using DNA methylation sites which are identified to overlap REs.
+#' the set cutoff values. **Note:** If assessPromoter is TRUE, two distribution
+#' plots are saved, one using all promoter DNA methylation sites, and one using
+#' only promoter DNA methylation sites which are identified to overlap REs.
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses datasets provided in the TENET.ExperimentHub package to
-#' ## perform an example analysis, analyzing RE DNA methylation sites in
-#' ## potential enhancer elements, located over 1500 bp from transcription
+#' ## perform an example analysis, considering RE DNA methylation sites in
+#' ## potential enhancer elements located over 1500 bp from transcription
 #' ## start sites listed for genes and transcripts in the GENCODE v36 human
-#' ## genome annotations, otherwise using default settings and a minimum case
-#' ## sample count of 5.
+#' ## genome annotations, using a minimum case sample count of 5, and otherwise
+#' ## using default settings.
 #'
 #' ## Load the example TENET MultiAssayExperiment object, and the example
 #' ## GRanges object created by the TENET step 1 function, from the
@@ -177,16 +176,14 @@
 #'
 #' ## This example uses the same datasets, this time analyzing DNA methylation
 #' ## sites in promoter elements, considering all RE DNA methylation sites
-#' ## found within 2000 bp of all transcription start sites provided in the
-#' ## MultiAssayExperiment only. Additionally, the methylation cutoffs are
-#' ## manually set to 0.8, 0.7, 0.3, and 0.2 for the `methCutoff`,
-#' ## `hypomethCutoff`, `hypermethCutoff`, and `unmethCutoff` respectively. The
-#' ## `minCaseCount` is set to 10 samples and all RE DNA methylation sites
-#' ## regardless of ID will be considered.
+#' ## found within 2000 bp of only the transcription start sites provided in the
+#' ## MultiAssayExperiment. All methylation cutoffs are manually specified, the
+#' ## minimum case sample count is set to 10, and all RE DNA methylation sites
+#' ## are considered regardless of whether their IDs begin with "cg".
 #'
-#' ## Load the example TENET MultiAssayExperiment object
-#' ## from the TENET.ExperimentHub package as well as the example GRanges object
-#' ## created by the TENET step 1 function from the TENET.ExperimentHub package
+#' ## Load the example TENET MultiAssayExperiment object, and the example
+#' ## GRanges object created by the TENET step 1 function, from the
+#' ## TENET.ExperimentHub package
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #' exampleStep1MakeExternalDatasetsGRangesObject <-
@@ -209,21 +206,22 @@
 #'     cgDNAMethylationSitesOnly = FALSE
 #' )
 step2GetDifferentiallyMethylatedSites <- function(
-    TENETMultiAssayExperiment,
-    regulatoryElementGRanges = NA,
-    geneAnnotationDataset = NA,
-    DNAMethylationArray = NA,
-    assessPromoter = FALSE,
-    TSSDist = 1500,
-    purityData = NA,
-    methCutoff = NA,
-    hypomethCutoff = NA,
-    hypermethCutoff = NA,
-    unmethCutoff = NA,
-    methUnmethProportionOffset = 0.2,
-    hypomethHypermethProportionOffset = 0.1,
-    minCaseCount,
-    cgDNAMethylationSitesOnly = TRUE) {
+  TENETMultiAssayExperiment,
+  regulatoryElementGRanges = NA,
+  geneAnnotationDataset = NA,
+  DNAMethylationArray = NA,
+  assessPromoter = FALSE,
+  TSSDist = 1500,
+  purityData = NA,
+  methCutoff = NA,
+  hypomethCutoff = NA,
+  hypermethCutoff = NA,
+  unmethCutoff = NA,
+  methUnmethProportionOffset = 0.2,
+  hypomethHypermethProportionOffset = 0.1,
+  minCaseCount,
+  cgDNAMethylationSitesOnly = TRUE
+) {
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(TENETMultiAssayExperiment)
 
@@ -963,7 +961,7 @@ step2GetDifferentiallyMethylatedSites <- function(
 
         ## Then calculate the blocks for the hyper- and hypomethylation
         ## cutoffs by taking the case peak locations, and
-        ## subtracting both interval block values
+        ## adding or subtracting both interval block values
         hypomethCutoffX <- (
             (caseMeanPeak2X - methUnmethIntervalBlockValue) -
                 hypomethHypermethIntervalBlockValue

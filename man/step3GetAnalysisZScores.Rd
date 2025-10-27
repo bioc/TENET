@@ -3,8 +3,8 @@
 \name{step3GetAnalysisZScores}
 \alias{step3GetAnalysisZScores}
 \title{Calculate Z-scores comparing the mean expression of each gene in the case
-samples that are hyper- or hypomethylated for each RE DNA methylation site
-chosen in step 2}
+samples that are hyper- and/or hypomethylated for each RE DNA methylation
+site identified in step 2}
 \usage{
 step3GetAnalysisZScores(
   TENETMultiAssayExperiment,
@@ -21,10 +21,9 @@ step3GetAnalysisZScores(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects,
-such as one created by the TCGADownloader function. This
-MultiAssayExperiment object should also contain the results from
-the \code{step2GetDifferentiallyMethylatedSites} function in the metadata of that
-object.}
+such as one created by the TCGADownloader function. The object's metadata
+must contain the results from the \code{step2GetDifferentiallyMethylatedSites}
+function.}
 
 \item{hypermethAnalysis}{Set to TRUE to calculate Z-scores for
 hypermethylated RE DNA methylation sites. Defaults to TRUE.}
@@ -37,7 +36,7 @@ identifying hyper/hypomethylated groups and calculating Z-scores.
 Defaults to FALSE.}
 
 \item{TFOnly}{Set to TRUE to only consider genes that are accepted
-transcription factors in "The Human Transcription Factors" by
+transcription factors according to "The Human Transcription Factors" by
 Lambert et al. 2018 when calculating Z-scores. Defaults to TRUE.}
 
 \item{zScoreCalculation}{Set to 'oneSample' to use a one-sample Z-score
@@ -63,30 +62,30 @@ mclapply. See \code{?parallel::mclapply} for more details. Defaults to 1.}
 \value{
 Returns the MultiAssayExperiment object given as the
 TENETMultiAssayExperiment argument with an additional list
-of data named "step3GetAnalysisZScores" in its metadata with the output
-of this function, which includes Z-scores for each TF or gene analyzed to
-each identified hyper- and/or hypomethylated RE DNA methylation site.
+named "step3GetAnalysisZScores" in its metadata containing the output
+of this function, which includes Z-scores comparing the mean expression of
+each gene in samples that are hypo- and/or hypomethylated for each RE DNA
+methylation site with the mean expression in samples that are not.
 }
 \description{
-This function takes the identified hyper- and hypomethylated RE DNA
-methylation sites from \code{step2GetDifferentiallyMethylatedSites} function and
-calculates Z-scores comparing the mean expression of each gene in the case
-samples that are hyper- or hypomethylated for each RE DNA methylation site,
-according to hyper- and hypomethylation cutoffs set during the previous
-function, to those that are not, across all hyper- or hypomethylated RE DNA
-methylation sites, calculating Z-scores for each unique RE DNA methylation
-site and gene combination, also known as a link.
+This function takes the identified hyper- and/or hypomethylated RE DNA
+methylation sites from the \code{step2GetDifferentiallyMethylatedSites} function
+and calculates Z-scores comparing the mean expression of each gene in the
+case samples that are hyper- or hypomethylated for each RE DNA methylation
+site, according to the methylation cutoffs set in step 2, to those that are
+not, across all hyper- or hypomethylated RE DNA methylation sites,
+calculating Z-scores for each unique RE DNA methylation site and gene
+combination, also known as a link.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to calculate one-sample Z-scores for links
-## between both the hypermethylated and hypomethylated RE DNA methylation
+## between both hypermethylated and hypomethylated RE DNA methylation
 ## sites and the expression of transcription factor genes only, considering
-## only the expression/methylation of case samples. Only significant
-## Z-scores equivalent to p<0.05 will be saved to the
-## TENETMultiAssayExperiment object. The analysis will be performed using
-## one CPU core.
+## only case samples. Only significant Z-scores (based on a threshold of
+## p<0.05) will be saved to the TENETMultiAssayExperiment object. The
+## analysis will be performed using one CPU core.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
@@ -98,13 +97,12 @@ returnValue <- step3GetAnalysisZScores(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example also uses the example MultiAssayExperiment, but calculates
+## This example demonstrates many of the analysis options. It calculates
 ## two-sample Z-scores for links between only hypomethylated RE DNA
-## methylation sites and all genes, considering the expression/methylation
-## of both case and control samples. For this analysis, all Z-scores are
-## saved to the TENETMultiAssayExperiment object (though it should be noted
-## this takes a large amount of memory). Only Z-scores with p-values less
-## than 0.1 will be considered significant. This analysis will be performed
+## methylation sites and all genes, considering both case and control samples
+## All Z-scores will be saved to the TENETMultiAssayExperiment object
+## (which takes a large amount of memory). Z-scores with p-values less
+## than 0.1 will be considered significant. The analysis will be performed
 ## using 8 CPU cores.
 
 ## Load the example TENET MultiAssayExperiment object
@@ -112,7 +110,7 @@ returnValue <- step3GetAnalysisZScores(
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Calculate Z-scores for hyper- and hypomethylated RE DNA methylation sites
+## Calculate Z-scores for only hypomethylated RE DNA methylation sites
 returnValue <- step3GetAnalysisZScores(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     hypermethAnalysis = FALSE,

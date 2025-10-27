@@ -30,12 +30,12 @@ Defaults to FALSE.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of data named
-'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata with
-the output of this function, which contains boxplots or violin plots showing
-the methylation of the RE DNA methylation sites of interest in the case and
-control samples, with Student's t-test p-values and the ID of the RE DNA
-methylation site in the title.
+TENETMultiAssayExperiment argument with an additional list named
+'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata,
+which contains boxplots or violin plots comparing the methylation of the RE
+DNA methylation sites of interest in the case and control samples. The titles
+of the plots contain the ID of the RE DNA methylation site and the Student's
+t-test p-value.
 }
 \description{
 This function takes a vector of RE DNA methylation sites specified by the
@@ -45,7 +45,7 @@ samples, along with the results of a Student's t-test comparing the
 methylation level between these two groups.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to generate boxplots for several selected
 ## RE DNA methylation sites, using one CPU core.
@@ -55,8 +55,7 @@ methylation level between these two groups.
 exampleTENETMultiAssayExperiment <-
     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 
-## Use the example dataset to create RE DNA methylation site case vs. control
-## boxplots
+## Use the example dataset to create the boxplots
 returnValue <- step7SelectedDNAMethylationSitesCaseVsControlBoxplots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
     DNAMethylationSites = c("cg03095778", "cg24011501", "cg12989041"),

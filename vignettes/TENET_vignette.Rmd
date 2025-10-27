@@ -30,7 +30,9 @@ vignette: >
 \RaggedRight
 
 ```{r echo = FALSE, message = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+## `crop = NULL` resolves "The magick package is required to crop ..." error;
+## see: https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", crop = NULL)
 options(tibble.print_min = 4, tibble.print_max = 4)
 ```
 
@@ -73,10 +75,10 @@ functions.
 
 R 4.5 or a newer version is required.
 
-On Ubuntu 22.04, successful installation required several additional packages.
+On Ubuntu 24.04, successful installation required several additional packages.
 They can be installed by running the following command in a terminal:
 
-`sudo apt-get install r-base-dev libcurl4-openssl-dev libfreetype6-dev libfribidi-dev libfontconfig1-dev libharfbuzz-dev libtiff5-dev libxml2-dev`
+`sudo apt-get install r-base-dev libcurl4-openssl-dev libfreetype-dev libfribidi-dev libfontconfig-dev libharfbuzz-dev libtiff-dev libxml2-dev libssl-dev`
 
 No dependencies other than R are required on macOS or Windows.
 
@@ -90,7 +92,6 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
 
-BiocManager::install(version = "devel")
 BiocManager::install("TENET")
 ```
 The development version containing the most recent updates is available from
@@ -455,7 +456,7 @@ table(sampleMap(exampleTENETMultiAssayExperiment)$sampleType)
 * `easyTENET`: Run the step 1 through step 6 functions with default arguments
 * `step1MakeExternalDatasets`: Create a GRanges object representing putative regulatory element regions, based on the data sources selected for inclusion, to be used in later TENET steps
 * `step2GetDifferentiallyMethylatedSites`: Identify differentially methylated RE DNA methylation sites
-* `step3GetAnalysisZScores`: Calculate Z-scores comparing the mean expression of each gene in the case samples that are hyper- or hypomethylated for each RE DNA methylation site chosen in step 2
+* `step3GetAnalysisZScores`: Calculate Z-scores comparing the mean expression of each gene in the case samples that are hyper- and/or hypomethylated for each RE DNA methylation site chosen in step 2
 * `step4SelectMostSignificantLinksPerDNAMethylationSite`: Select the most significant RE DNA methylation site-gene links to each RE DNA methylation site
 * `step5OptimizeLinks`: Find final RE DNA methylation site-gene links using various optimization metrics
 * `step6DNAMethylationSitesPerGeneTabulation`: Tabulate the total number of RE DNA methylation sites linked to each of the genes
@@ -549,7 +550,7 @@ This function creates a GRanges object containing regions representing putative
 regulatory elements, either enhancers or promoters, of interest to the user
 based on the presence of specific histone marks and open
 chromatin/nucleosome-depleted regions. This function can take input from
-user-specified bed-like files (see
+user-specified BED-like files (see
 <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>) containing regions with
 histone modification (via the `extHM` argument) and/or open
 chromatin/nucleosome-depleted regions (via the `extNDR` argument), as well as
@@ -590,10 +591,9 @@ head(step1Output)
 
 This function identifies DNA methylation sites that mark putative regulatory
 elements (REs), including enhancer and promoter regions. These are sites
-that lie within regions with specific histone modifications and open
-chromatin regions, from a user-supplied GRanges object, such as one created
-by the `step1MakeExternalDatasets` function, and which are located at a
-user-specified distance relative to the transcription start sites (TSS)
+that lie within regions from a user-supplied GRanges object, such as one
+created by the `step1MakeExternalDatasets` function, and which are located at
+a user-specified distance relative to the transcription start sites (TSS)
 listed in either the rowRanges of the elementMetadata of the "expression"
 SummarizedExperiment in the TENETMultiAssayExperiment object, or the
 selected `geneAnnotationDataset` (which will be filtered to only genes and
@@ -660,15 +660,15 @@ head(
 )
 ```
 
-## `step3GetAnalysisZScores`: Calculate Z-scores comparing the mean expression of each gene in the case samples that are hyper- or hypomethylated for each RE DNA methylation site chosen in step 2
+## `step3GetAnalysisZScores`: Calculate Z-scores comparing the mean expression of each gene in the case samples that are hyper- and/or hypomethylated for each RE DNA methylation site identified in step 2
 
 This function calculates Z-scores comparing the mean expression of each gene in
-the case samples that are hyper- or hypomethylated for each RE DNA methylation
-site chosen in step 2 to the mean expression of the remaining non hyper- or
-hypomethylated case samples. By identifying significant Z-scores, initial RE
-DNA methylation site-gene links are identified, as case samples with hyper-
-or hypomethylation of a particular RE DNA methylation site also display
-particularly high or low expression of specific genes.
+the case samples that are hyper- and/or hypomethylated for each RE DNA
+methylation site identified in step 2 to the mean expression of the remaining
+non-hyper- or hypomethylated case samples. By identifying significant Z-scores,
+initial RE DNA methylation site-gene links are identified, in the form of case
+samples with hyper- or hypomethylation of a particular RE DNA methylation site
+also displaying particularly high or low expression of specific genes.
 
 TENET supports the use of two different formulas for calculating Z-scores in
 this step. By setting the zScoreCalculation argument to "oneSample", a
@@ -739,14 +739,15 @@ head(
 
 ## `step4SelectMostSignificantLinksPerDNAMethylationSite`: Select the most significant RE DNA methylation site-gene links to each RE DNA methylation site
 
-This function takes the calculated Z-scores for the hyper- or hypomethylated G+
-RE DNA methylation site-gene links and selects the most significant links to
-each RE DNA methylation site, either up to a number specified by the user, or
-based on a significant p-value level set by the user after multiple testing
-correction is performed on the Z-scores output by the `step3GetAnalysisZScores`
-function per RE DNA methylation site in the RE DNA methylation site-gene pairs.
-This helps prioritize individual RE DNA methylation site-gene links where
-there are many genes linked to a single RE DNA methylation site.
+This function takes the calculated Z-scores for the hyper- and/or
+hypomethylated G+ RE DNA methylation site-gene links and selects the most
+significant links to each RE DNA methylation site, either up to a number
+specified by the user, or based on a significant p-value level set by the
+user after multiple testing correction is performed on the Z-scores output
+by the `step3GetAnalysisZScores` function per RE DNA methylation site in the
+RE DNA methylation site-gene pairs. This helps prioritize individual RE DNA
+methylation site-gene links where there are many genes linked to a single
+site.
 
 As described previously, if you wish to use multiple testing correction, the
 sparseResults argument in the previous `step3GetAnalysisZScores` function
@@ -788,7 +789,7 @@ head(
 
 ## `step5OptimizeLinks`: Find final RE DNA methylation site-gene links using various optimization metrics
 
-This function takes the most significant hyper- or hypomethylated G+ RE DNA
+This function takes the most significant hyper- and/or hypomethylated G+ RE DNA
 methylation site-gene links selected in step 4, and selects optimized links
 based on the relative expression of the given gene in hyper- or
 hypomethylated case samples compared to control samples, using an unpaired
@@ -829,14 +830,13 @@ head(
 )
 ```
 
-## `step6DNAMethylationSitesPerGeneTabulation`: Tabulate the total number of RE DNA methylation sites linked to each of the genes
+## `step6DNAMethylationSitesPerGeneTabulation`: Tabulate the total number of RE DNA methylation sites linked to each gene
 
 This function takes the final optimized RE DNA methylation site-gene links
-identified in step 5 and tabulates the number of these links per gene. This
-tabulation is done separately for both of the hyper- or hypomethylated G+
-analysis quadrants, as selected by the user.
+identified in step 5 and tabulates the number of links per gene separately
+for the hyper- and/or hypomethylated G+ analysis quadrants.
 
-This aids in prioritizing the top genes for downstream analyses, as the genes
+This aids in prioritizing genes for downstream analyses, as the genes
 with the most linked RE DNA methylation sites are the most likely to represent
 those with widespread genomic impact.
 
@@ -920,23 +920,23 @@ RE DNA methylation site-gene links, integrating multi-omic datasets such as
 Hi-C, copy number variation, somatic mutation, and patient survival information.
 
 * `step7ExpressionVsDNAMethylationScatterplots`: Create scatterplots displaying the expression of the top genes and the methylation levels of each of their linked RE DNA methylation sites, along with copy number variation, somatic mutation, and purity data, if provided by the user
-* `step7LinkedDNAMethylationSiteCountHistograms`: Create histograms displaying the number of genes or transcription factors linked to a given number of RE DNA methylation sites
-* `step7LinkedDNAMethylationSitesMotifSearching`: Perform motif searching for transcription factor motifs in the vicinity of RE DNA methylation sites linked to the specified transcription factors
+* `step7LinkedDNAMethylationSiteCountHistograms`: Create histograms displaying the number of total genes and transcription factor genes linked to a given number of RE DNA methylation sites
+* `step7LinkedDNAMethylationSitesMotifSearching`: Search for transcription factor motifs in the vicinity of DNA methylation sites and/or within custom regions defined by the user
 * `step7SelectedDNAMethylationSitesCaseVsControlBoxplots`: Generate boxplots or violin plots comparing the methylation level of the specified RE DNA methylation sites in case and control samples
 * `step7StatesForLinks`: Identify which of the case samples harbor each of the identified regulatory element DNA methylation site-gene links
-* `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes/transcription factors in case and control samples
-* `step7TopGenesCircosPlots`: Generate Circos plots displaying the links between top identified genes and each of the RE DNA methylation sites linked to them
-* `step7TopGenesDNAMethylationHeatmaps`: Generate heatmaps displaying the methylation level of all RE DNA methylation sites linked to the top genes/transcription factors, along with the expression of those genes in the column headers, in the case samples within the supplied MultiAssayExperiment object
+* `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes and transcription factors in case and control samples
+* `step7TopGenesCircosPlots`: Generate Circos plots displaying the links between the top identified genes and each of the RE DNA methylation sites linked to them
+* `step7TopGenesDNAMethylationHeatmaps`: Generate heatmaps displaying the methylation level of all RE DNA methylation sites linked to the top genes and transcription factors, along with the expression of those genes in the column headers, in the case samples within the supplied MultiAssayExperiment object
 * `step7TopGenesExpressionCorrelationHeatmaps`: Generate mirrored heatmaps displaying the correlation of the expression values of the top genes/TFs
-* `step7TopGenesOverlappingLinkedDNAMethylationSitesHeatmaps`: Generate binary heatmaps displaying which of the top genes/transcription factors share links with each of the unique regulatory element DNA methylation sites linked to at least one top gene/TF
+* `step7TopGenesOverlappingLinkedDNAMethylationSitesHeatmaps`: Generate binary heatmaps displaying which of the top genes and transcription factors share links with each of the unique regulatory element DNA methylation sites linked to at least one top gene/TF
 * `step7TopGenesSurvival`: Perform Kaplan-Meier and Cox regression analyses to assess the association of top gene expression and linked RE DNA methylation site methylation with patient survival
-* `step7TopGenesTADTables`: Create tables using user-supplied topologically associating domain (TAD) information which identify the topologically associating domains containing each RE DNA methylation site linked to the top genes/transcription factors, as well as other genes in the same topologically associating domain as potential downstream targets
-* `step7TopGenesUCSCBedFiles`: Create bed-formatted interact files which can be loaded on the UCSC Genome Browser to display links between top genes and transcription factors and their linked RE DNA methylation sites
-* `step7TopGenesUserPeakOverlap`: Identify if RE DNA methylation sites linked to top genes/transcription factors are located within a specific distance of specified genomic regions
+* `step7TopGenesTADTables`: Create tables using user-supplied topologically associating domain (TAD) information which identify the TADs containing each RE DNA methylation site linked to the top genes and transcription factors, as well as other genes in the same TAD as potential downstream targets
+* `step7TopGenesUCSCBedFiles`: Create BED-formatted interact files which can be loaded on the UCSC Genome Browser to display links between top genes and transcription factors and their linked RE DNA methylation sites
+* `step7TopGenesUserPeakOverlap`: Identify if RE DNA methylation sites linked to top genes and transcription factors are located within a specific distance of specified genomic regions
 
 Here we will demonstrate the usage of some step 7 functions.
 
-## `step7ExpressionVsDNAMethylationScatterplots`: Create scatterplots displaying the expression of the top genes and the methylation levels of each of their linked RE DNA methylation sites, along with copy number variation, somatic mutation, and purity data, if provided by the user
+## `step7ExpressionVsDNAMethylationScatterplots`: Create scatterplots displaying the expression of the top genes and the methylation levels of each of their linked RE DNA methylation sites, optionally incorporating copy number variation, somatic mutation, and purity data
 
 These scatterplots show the relationship between genes and RE DNA methylation
 sites, displaying the expression of the genes in the X-axis and the methylation
@@ -1055,16 +1055,17 @@ metadata(
     topGenes$ENSG00000124664$cg25731211
 ```
 
-## `step7LinkedDNAMethylationSiteCountHistograms`: Create histograms displaying the number of genes or transcription factors linked to a given number of RE DNA methylation sites
+## `step7LinkedDNAMethylationSiteCountHistograms`: Create histograms displaying the number of total genes and transcription factor genes linked to a given number of RE DNA methylation sites
 
-This function generates histograms displaying the frequency of genes by the
-number of RE DNA methylation sites linked to them. These are designed to
-highlight the top genes/TFs, which likely have a disproportionately large
-number of linked RE DNA methylation sites compared to most genes/TFs.
+This function generates histograms displaying the number of total genes and
+transcription factor genes linked to a given number of RE DNA methylation sites.
+These are designed to highlight the top overall genes and TF genes, which likely
+have a disproportionately large number of linked RE DNA methylation sites
+compared to most genes.
 
 ```{r fig.width=10, fig.height=7}
 ## Run the step7LinkedDNAMethylationSiteCountHistograms function.
-## Since we performed analyses only using TFs in the step 3 function, the
+## Since we performed analyses using only TFs in the step 3 function, the
 ## top genes are all TFs, so a message that separate output for
 ## TFs will be skipped is displayed.
 exampleObject <- step7LinkedDNAMethylationSiteCountHistograms(
@@ -1086,19 +1087,62 @@ metadata(
 )$step7LinkedDNAMethylationSiteCountHistograms$hypomethGplusResults$topGenes
 ```
 
-## `step7LinkedDNAMethylationSitesMotifSearching`: Perform motif searching for transcription factor motifs in the vicinity of RE DNA methylation sites linked to the specified transcription factors
+## `step7LinkedDNAMethylationSitesMotifSearching`: Search for transcription factor motifs in the vicinity of DNA methylation sites and/or within custom regions defined by the user
 
-To run the motif searching function, it is necessary to provide position weight
-matrices (PWMs), which represent DNA binding motifs for the TFs of interest in
-a named list, with each of the PWMs named after the TFs they represent in the
-TENET dataset.
+To run the motif searching function, DNA binding motifs for the TFs of interest
+are required. These can be automatically retrieved via the MotifDb package by
+providing `andStrings`, `orStrings`, and/or `notStrings` arguments, which will
+be passed to the MotifDb package's `query` function. To include or exclude the
+motifs of all TFs in TENET's dataset, the string "humanTranscriptionFactors" can
+be included in any of these lists. In addition, motifs may be directly
+supplied via the `TFMotifList` argument as position weight matrices (PWMs) in a
+named list, with each PWM named after the TF it represents in the TENET dataset.
+**Note:** If this argument is specified, and
+`useOnlyDNAMethylationSitesLinkedToTFs` is not explicitly set to FALSE, only RE
+DNA methylation sites found by TENET to be linked to the TFs specified in the
+`TFMotifList` argument are considered.
 
-The easiest way to get PWMs is to use the MotifDb package to search for
-available PWMs for a given TF. In this example, we search for PWMs which are
-available for the FOXA1 and ESR1 TFs.
+**Note:** Using many input motifs or RE DNA methylation sites may cause the
+search to take a significant amount of time, so in this case, using multiple CPU
+cores is highly recommended.
+
+By default, the specified motifs are only searched for in the vicinity of RE
+DNA methylation sites present in the rowRanges of the "methylation"
+SummarizedExperiment object. Additional regions within which to search may be
+specified via the `GRangesToSearch` argument.
+
+If a DNA methylation array is specified via the `DNAMethylationArray` argument,
+only RE DNA methylation sites present in both the array's manifest and the
+rownames of the methylation dataset provided in the "methylation"
+SummarizedExperiment object within the TENETMultiAssayExperiment object will be
+be considered for analysis. If an array is not specified, all RE DNA methylation
+sites present in the rowRanges of the "methylation" SummarizedExperiment object
+will be used.
+
+By default, only RE DNA methylation sites found to be linked to TFs by previous
+TENET steps are considered, in which case the analysis quadrants to consider
+are selected by the `hypermethGplusAnalysis` and `hypomethGplusAnalysis`
+arguments. The `useOnlyDNAMethylationSitesLinkedToTFs` argument can be set to
+FALSE to disable this filtering. Additional DNA methylation sites to consider
+may be specified via the `DNAMethylationSites` argument.
+
+The distance upstream and downstream from DNA methylation sites within which to
+search can be specified via the `distanceFromREDNAMethylationSites` argument.
+The default distance is 100bp.
+
+The stringency of the motif matching can be adjusted via the `matchPWMMinScore`
+argument, and can be given as a minimum number of matching base pairs or
+accuracy percentage. It defaults to 75%. See the documentation for the
+`min.score` argument in `?Biostrings::matchPWM` for more information. Note that
+longer motifs tend to have fewer matches than shorter motifs.
+
+Although MotifDb search results may be directly integrated via the `andStrings`,
+`orStrings`, and/or `notStrings` arguments, for the purposes of demonstrating
+the format of the `TFMotifList` argument, we will manually retrieve PWMs of
+interest from MotifDb.
 
 ```{r}
-## View the first few available motifs for the FOXM1 TF
+## View the first few available motifs for the FOXA1 TF
 head(names(MotifDb::query(MotifDb::MotifDb, "FOXA1")))
 
 ## View the first few available motifs for the ESR1 TF
@@ -1108,6 +1152,10 @@ head(names(MotifDb::query(MotifDb::MotifDb, "ESR1")))
 Next, we create a named list using the human HOCOMOCO v11 core motif PWMs
 available for both TFs, which will be used when running the
 `step7LinkedDNAMethylationSitesMotifSearching` function.
+
+Note that TF genes can be specified via their names (taken from the
+input `TENETMultiAssayExperiment` object or the `geneAnnotationDataset`
+argument) or their IDs.
 
 ```{r}
 ## The human HOCOMOCO v11 core motif is the 3rd listed for FOXA1, and 4th for
@@ -1121,17 +1169,10 @@ TFMotifList
 ```
 
 Finally, we run the `step7LinkedDNAMethylationSitesMotifSearching` function to
-search for the selected FOXA1 and ESR1 motifs in the vicinity of identified
-hypomethylated RE DNA methylation sites linked to the RE DNA methylation sites
-found to be linked to those TFs in the TENET analyses that were performed
-earlier. A threshold of 80% is chosen to assess motif accuracy to surrounding
-DNA sequences within 100 base pairs of RE DNA methylation sites. Increasing the
-threshold value makes the search more strict, and reduces the number of motifs
-found, while decreasing this value does the opposite. Also, longer motifs will
-tend to have fewer matches than shorter motifs.
-
-**Note:** Motif searching can take some time. It is highly recommended to run
-this function with multiple cores if possible.
+search for the selected FOXA1 and ESR1 motifs. We use the default settings to
+search within 100bp of identified hypomethylated RE DNA methylation sites found
+to be linked to TFs in both the hypermethylated and hypomethylated G+ analysis
+quadrants, but specify a custom accuracy threshold of 80%.
 
 ```{r eval = FALSE}
 exampleObject <- step7LinkedDNAMethylationSitesMotifSearching(
@@ -1161,7 +1202,7 @@ head(
         FOXA1$DNAMethylationSiteMotifOccurrences
 )
 
-## Also see the total number of motifs found in the vicinity of each RE DNA
+## View the total number of motifs found in the vicinity of each RE DNA
 ## methylation site
 head(
     metadata(
@@ -1264,7 +1305,7 @@ metadata(
 
 This function identifies which of the samples provided in the dataset likely
 harbor each of the RE DNA methylation site-gene links. This is accomplished by
-examining if the RE DNA methylation site in a given link is hyper- or
+examining if the RE DNA methylation site in a given link is hyper- and/or
 hypomethylated in a given case sample, and if expression of the gene in the
 link for that case sample is significantly less or greater than, respectively,
 mean expression of the gene in the control samples. This is potentially helpful
@@ -1303,7 +1344,7 @@ head(
 )
 ```
 
-## `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes/transcription factors in case and control samples
+## `step7TopGenesCaseVsControlExpressionBoxplots`: Generate boxplots or violin plots comparing the expression level of the top genes and transcription factors in case and control samples
 
 This function generates boxplots or violin plots comparing the expression of the
 top genes/TFs by number of linked RE DNA methylation sites in the case versus
@@ -1473,7 +1514,7 @@ head(
 )
 ```
 
-## `step7TopGenesDNAMethylationHeatmaps`: Generate heatmaps displaying the methylation level of all RE DNA methylation sites linked to the top genes/transcription factors, along with the expression of those genes in the column headers, in the case samples within the supplied MultiAssayExperiment object
+## `step7TopGenesDNAMethylationHeatmaps`: Generate heatmaps displaying the methylation level of all RE DNA methylation sites linked to the top genes and transcription factors, along with the expression of those genes in the column headers, in the case samples within the supplied MultiAssayExperiment object
 
 This function creates heatmaps displaying the methylation of unique RE DNA
 methylation sites linked to the top genes in the main body of the heatmaps, as
@@ -1510,7 +1551,7 @@ names(metadata(
 )$step7TopGenesDNAMethylationHeatmaps$hypomethGplusResults)
 ```
 
-## `step7TopGenesOverlappingLinkedDNAMethylationSitesHeatmaps`: Generate binary heatmaps displaying which of the top genes/transcription factors share links with each of the unique regulatory element DNA methylation sites linked to at least one top gene/TF
+## `step7TopGenesOverlappingLinkedDNAMethylationSitesHeatmaps`: Generate binary heatmaps displaying which of the top genes and transcription factors share links with each of the unique regulatory element DNA methylation sites linked to at least one top gene/TF
 
 These binary heatmaps provide a visual representation of which of the top genes
 each RE DNA methylation site is linked to, as RE DNA methylation sites can be
@@ -1559,7 +1600,7 @@ head(
 
 ## `step7TopGenesSurvival`: Perform Kaplan-Meier and Cox regression analyses to assess the association of top gene expression and linked RE DNA methylation site methylation with patient survival
 
-This function takes the top genes/transcription factors (TFs) by number of
+This function takes the top genes and transcription factors (TFs) by number of
 linked RE DNA methylation sites identified by the
 `step6DNAMethylationSitesPerGeneTabulation` function up to the number
 specified by the user and generates survival plots and tables with statistics
@@ -1682,7 +1723,7 @@ To demonstrate, we perform the same analysis using three natural breakpoints in
 the data.
 
 ```{r fig.width=10, fig.height=7}
-## Use the example dataset to do the survival analysis
+## Use the example dataset to perform the survival analysis
 exampleObject <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleObject,
     highProportion = NA,
@@ -1703,7 +1744,7 @@ allows the use of any number of groups with arbitrary names and multiple cutoff
 ranges. To demonstrate, we perform the same analysis with four custom groups.
 
 ```{r fig.width=10, fig.height=7}
-## Create a custom cutoffsMatrix which will split the samples into quartiles
+## Create a custom cutoff matrix which will split the samples into quartiles
 ## for the purposes of the survival analyses and will also define custom
 ## names for these groups
 cutoffMatrix <- data.frame(
@@ -1717,7 +1758,7 @@ rownames(cutoffMatrix) <- c(
     "GroupFour"
 )
 
-## Use the example dataset and cutoffMatrix to do the survival analysis
+## Use the example dataset and cutoffMatrix to perform the survival analysis
 exampleObject <- step7TopGenesSurvival(
     TENETMultiAssayExperiment = exampleObject,
     highProportion = NA,
@@ -1732,10 +1773,10 @@ metadata(
     topGenes$topGenesSurvivalPlots$ENSG00000107485
 ```
 
-## `step7TopGenesTADTables`: Create tables using user-supplied topologically associating domain (TAD) information which identify the topologically associating domains containing each RE DNA methylation site linked to the top genes/transcription factors, as well as other genes in the same topologically associating domain as potential downstream targets
+## `step7TopGenesTADTables`: Create tables using user-supplied topologically associating domain (TAD) information which identify the TADs containing each RE DNA methylation site linked to the top genes and transcription factors, as well as other genes in the same TAD as potential downstream targets
 
 This function requires the user to supply either a path to a directory
-containing bed-like files with TAD regions of interest, or a single TAD object
+containing BED-like files with TAD regions of interest, or a single TAD object
 given as a GRanges, data frame, or matrix object, as seen in the example below.
 To illustrate the use of this function, we will use an example TAD dataset from
 the TENET.ExperimentHub package.
@@ -1798,7 +1839,7 @@ head(
 )
 ```
 
-## `step7TopGenesUCSCBedFiles`: Create bed-formatted interact files which can be loaded on the UCSC Genome Browser to display links between top genes and transcription factors and their linked RE DNA methylation sites
+## `step7TopGenesUCSCBedFiles`: Create BED-formatted interact files which can be loaded on the UCSC Genome Browser to display links between top genes and transcription factors and their linked RE DNA methylation sites
 
 This function will output the interact file in the specified folder. For the
 purposes of this example, we will save the output file in a temporary folder.
@@ -1843,34 +1884,34 @@ cat(head(readLines(bedPath)), sep = "\n")
 invisible(file.remove(unlist(bedPath)))
 ```
 
-## `step7TopGenesUserPeakOverlap`: Identify if RE DNA methylation sites linked to top genes/transcription factors are located within a specific distance of specified genomic regions
+## `step7TopGenesUserPeakOverlap`: Identify if RE DNA methylation sites linked to top genes and transcription factors are located within a specific distance of specified genomic regions
 
 The `step7TopGenesUserPeakOverlap` function requires the user to supply one or
-more paths to directories containing bed-like files with peaks of interest or
-peak datasets given as GRanges, data frame, or matrix objects. If multiple
-inputs are provided, they should be passed in the form of a named list. To
-illustrate the use of this function, we will use an example peak dataset from
-the TENET.ExperimentHub package.
+more paths to BED-like files with peaks of interest, direcctories containing
+these files, or peak datasets given as GRanges, data frame, or matrix objects.
+If multiple inputs are provided, they should be passed in the form of a named
+list. To illustrate the use of this function, we will use an example peak
+dataset from the TENET.ExperimentHub package.
 
 ```{r}
 ## Load the example peak dataset from the TENET.ExperimentHub package
-examplePeakFile <- TENET.ExperimentHub::exampleTENETPeakRegions()
+examplePeakDataset <- TENET.ExperimentHub::exampleTENETPeakRegions()
 
-## Peak files for this function must include the chromosome of each peak region
+## Peak datasets must include the chromosome of each peak region
 ## in the first column, and the start and end positions of each peak in the
 ## second and third columns respectively. Peak names are taken from the fourth
 ## column of the input if it exists, or, if the input is a GRanges object, the
 ## names of the ranges. If no names are present, they are generated from peak
 ## coordinates and take the form
-## '<chromosome>_<start>_<end>[.<optionalDuplicateNumber>]'. The files may
+## '<chromosome>_<start>_<end>[.<optionalDuplicateNumber>]'. Input files may
 ## optionally be compressed (.gz/.bz2/.xz). Additional columns can be included,
 ## but are not used by this function.
-class(examplePeakFile)
-head(examplePeakFile)
+class(examplePeakDataset)
+head(examplePeakDataset)
 ```
 
 The unique RE DNA methylation sites linked to the top genes will be overlapped
-with the peak files, with a specified buffer region added to the RE DNA
+with the peak datasets, with a specified buffer region added to the RE DNA
 methylation sites, so RE DNA methylation sites can be found in the vicinity of
 peaks, rather than directly inside of them.
 
@@ -1881,7 +1922,7 @@ peaks, rather than directly inside of them.
 ## TFs will be skipped is displayed.
 exampleObject <- step7TopGenesUserPeakOverlap(
     TENETMultiAssayExperiment = exampleObject,
-    peakData = examplePeakFile,
+    peakData = examplePeakDataset,
     hypermethGplusAnalysis = FALSE,
     hypomethGplusAnalysis = TRUE,
     topGeneNumber = 10,
@@ -1966,6 +2007,15 @@ data("humanTranscriptionFactorDb", package = "TENET")
 ## Display some information for the first few TFs in the dataset
 humanTranscriptionFactorDb[seq_len(5), seq_len(5)]
 ```
+
+# Acknowledgements
+
+This work was supported in part by grants K01CA229995, R21CA260082,
+R21CA264637, R21HG011506, and P30CA014089 from the National Institutes of
+Health, grant W81XWH-21-1-0805 from the Department of Defense, pilot grants from
+the USC Keck School of Medicine, the USC Center for Genetic Epidemiology, the
+USC Norris Comprehensive Cancer Center [to S.K.R.], and the John H. Richardson
+Endowed Postdoctoral Fellowship in Oncology Research [to D.J.M.].
 
 # Session info
 

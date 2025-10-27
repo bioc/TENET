@@ -1,18 +1,18 @@
 ## Internal functions used by step 1
 
-## Internal function to load bed-like files from a directory and
+## Internal function to load BED-like files from a list of paths and
 ## return it as a GRanges object
-.loadExtBedFiles <- function(extDir, paramName, paramDescription) {
-    ## Ensure that the supplied directory exists. If it does, load any .bed,
-    ## .narrowPeak, .broadPeak, and/or .gappedPeak files inside.
-    extFileList <- .listExtBedFiles(extDir, paramName, paramDescription)
+.loadExtBedFiles <- function(extPaths, paramName, paramDescription) {
+    ## Ensure that the supplied paths exist. If it does, load any .bed,
+    ## .narrowPeak, .broadPeak, and/or .gappedPeak files found there.
+    extFileList <- .listExtBedFiles(extPaths, paramName, paramDescription)
 
     ## For each of the files, load it then combine the peaks into an extGRanges
     ## object
     extGRanges <- NULL
 
     for (i in extFileList) {
-        ## Load the first three columns of the user's bed-like file
+        ## Load the first three columns of the user's BED-like file
         bedlikeFileGRanges <- rtracklayer::import.bed(
             i,
             colnames = c("chrom", "start", "end")
@@ -36,7 +36,7 @@
 #' putative regulatory elements, either enhancers or promoters, of
 #' interest to the user, based on the presence of specific histone marks
 #' and open chromatin/nucleosome-depleted regions. This function can take input
-#' from user-specified bed-like files (see
+#' from user-specified BED-like files (see
 #' <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>) containing regions with
 #' histone modification (via the `extHM` argument) and/or open
 #' chromatin/nucleosome-depleted regions (via the `extNDR` argument), as well
@@ -48,19 +48,21 @@
 #' TENET.AnnotationHub requires an internet connection, as those datasets are
 #' hosted in the Bioconductor AnnotationHub Data Lake.
 #'
-#' @param extHM To use custom histone modification datasets, specify a path
-#' to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-#' .gappedPeak files with these datasets. The files may optionally be compressed
-#' (.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
-#' @param extNDR To use custom open chromatin or NDR datasets, specify a
-#' path to a directory containing .bed, .narrowPeak, .broadPeak, and/or
-#' .gappedPeak files with these datasets. The files may optionally be compressed
-#' (.gz/.bz2/.xz). Otherwise, specify NA or do not specify this argument.
+#' @param extHM To use custom histone modification datasets, specify one or more
+#' paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files containing
+#' these datasets, or directories containing these file types. The files may
+#' optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or do not
+#' specify this argument.
+#' @param extNDR To use custom open chromatin or NDR datasets, specify one or
+#' more paths to .bed, .narrowPeak, .broadPeak, and/or .gappedPeak files
+#' containing these datasets, or directories containing these file types. The
+#' files may optionally be compressed (.gz/.bz2/.xz). Otherwise, specify NA or
+#' do not specify this argument.
 #' @param consensusEnhancer Set to TRUE to use the consensus enhancer data
 #' included in TENET.AnnotationHub. Defaults to TRUE.
 #' @param consensusPromoter Set to TRUE to use the consensus promoter data
 #' included in TENET.AnnotationHub. Defaults to FALSE.
-#' @param consensusNDR Set to TRUE to use the consensus open chromatin
+#' @param consensusNDR Set to TRUE to use the consensus open chromatin (NDR)
 #' data included in TENET.AnnotationHub. Defaults to TRUE.
 #' @param publicEnhancer Set to TRUE to use the preprocessed publicly available
 #' enhancer (H3K27ac) datasets included in TENET.AnnotationHub. If set to TRUE,
@@ -73,8 +75,8 @@
 #' TENET.AnnotationHub. If set to TRUE, `cancerType` must be specified.
 #' Defaults to FALSE.
 #' @param cancerType If `publicEnhancer`, `publicPromoter`, and/or `publicNDR`
-#' is TRUE, specify a vector of cancer types from 'BLCA', 'BRCA', 'COAD',
-#' 'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and 'THCA' to include the
+#' is TRUE, specify a vector of cancer types ('BLCA', 'BRCA', 'COAD',
+#' 'ESCA', 'HNSC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', and/or 'THCA') to include the
 #' public data relevant to those cancer types. Defaults to NA.
 #' @param ENCODEPLS Set to TRUE to use the ENCODE promoter-like elements
 #' dataset included in TENET.AnnotationHub. Defaults to FALSE.
@@ -99,7 +101,7 @@
 #' )
 #'
 #' ## This example creates a dataset of putative promoter regulatory elements
-#' ## using user provided bed-like files contained in the working
+#' ## using user provided BED-like files contained in the working
 #' ## directory, consensus NDR and promoter regions, and regions with
 #' ## promoter-like signatures from the ENCODE SCREEN project. This excludes any
 #' ## cancer type-specific public datasets.
@@ -111,18 +113,19 @@
 #'     ENCODEPLS = TRUE
 #' )
 step1MakeExternalDatasets <- function(
-    extHM = NA,
-    extNDR = NA,
-    consensusEnhancer = TRUE,
-    consensusPromoter = FALSE,
-    consensusNDR = TRUE,
-    publicEnhancer = FALSE,
-    publicPromoter = FALSE,
-    publicNDR = FALSE,
-    cancerType = NA,
-    ENCODEPLS = FALSE,
-    ENCODEpELS = FALSE,
-    ENCODEdELS = FALSE) {
+  extHM = NA,
+  extNDR = NA,
+  consensusEnhancer = TRUE,
+  consensusPromoter = FALSE,
+  consensusNDR = TRUE,
+  publicEnhancer = FALSE,
+  publicPromoter = FALSE,
+  publicNDR = FALSE,
+  cancerType = NA,
+  ENCODEPLS = FALSE,
+  ENCODEpELS = FALSE,
+  ENCODEdELS = FALSE
+) {
     ## If publicEnhancer, publicPromoter, or publicNDR is TRUE, ensure that we
     ## have data for all selected cancer types
     if (any(publicEnhancer, publicPromoter, publicNDR)) {
@@ -156,13 +159,13 @@ step1MakeExternalDatasets <- function(
     ENCODEList <- list()
 
     ## If external HM files are used, validate the directory and load all
-    ## bed-like files from it, adding the resulting GRanges object to
+    ## BED-like files from it, adding the resulting GRanges object to
     ## TENETGRHMList
     if (!is.na(extHM)) {
         TENETGRHMList <- c(
             TENETGRHMList,
             extHMFiles = .loadExtBedFiles(
-                extDir = extHM,
+                extPaths = extHM,
                 paramName = "extHM",
                 paramDescription = "regions with histone modification"
             )
@@ -170,13 +173,13 @@ step1MakeExternalDatasets <- function(
     }
 
     ## If external NDR files are used, validate the directory and load all
-    ## bed-like files from it, adding the resulting GRanges object to
+    ## BED-like files from it, adding the resulting GRanges object to
     ## TENETGRNDRList
     if (!is.na(extNDR)) {
         TENETGRNDRList <- c(
             TENETGRNDRList,
             extNDRFiles = .loadExtBedFiles(
-                extDir = extNDR,
+                extPaths = extNDR,
                 paramName = "extNDR",
                 paramDescription = "NDR/open chromatin regions"
             )

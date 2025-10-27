@@ -9,9 +9,9 @@
 #' by TENET examples and optional features (TENET.ExperimentHub objects used in
 #' examples, TENET.AnnotationHub datasets used in step 1, and SeSAMe datasets
 #' loaded via the `DNAMethylationArray` argument). The main purpose of this
-#' function is to enable the use of TENET in an HPC cluster environment where
-#' compute nodes do not have internet access. In this case, you must run
-#' `TENETCacheAllData()` once while connected to the internet before using
+#' function is to enable the use of TENET in an environment without internet
+#' access, such as the compute nodes of an HPC cluster. In this case, you must
+#' run `TENETCacheAllData()` once while connected to the internet before using
 #' TENET examples or these optional features.
 #'
 #' @return Returns NULL.
@@ -120,7 +120,7 @@ TENETCacheAllData <- function() {
                 ## Cache the actual data. ExperimentHub doesn't have its own
                 ## query function, but the AnnotationHub one works.
                 suppressMessages(eh <- AnnotationHub::query(
-                    ExperimentHub::ExperimentHub(), "TENET.AnnotationHub"
+                    ExperimentHub::ExperimentHub(), "TENET.ExperimentHub"
                 )[ehIDs])
 
                 ## Cache the actual data

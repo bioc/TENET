@@ -18,16 +18,17 @@
 
 ## Internal function to plot a methylation heatmap for the given quadrant
 .plotQuadrantMethylationHeatmap <- function(
-    TENETMultiAssayExperiment,
-    expressionDataCase,
-    quadrantMethylationDataCase,
-    hyperHypo,
-    geneOrTF,
-    topGeneNumber,
-    geneIDNameDF,
-    quadrantSigLinkZScores,
-    quadrantResultsName,
-    metToExpSampleConversion) {
+  TENETMultiAssayExperiment,
+  expressionDataCase,
+  quadrantMethylationDataCase,
+  hyperHypo,
+  geneOrTF,
+  topGeneNumber,
+  geneIDNameDF,
+  quadrantSigLinkZScores,
+  quadrantResultsName,
+  metToExpSampleConversion
+) {
     ## Get the IDs of the top genes/TFs in this quadrant
     topQuadrantGeneOrTFIDs <- .getQuadrantTopGenesOrTFs(
         TENETMultiAssayExperiment, geneOrTF, hyperHypo, topGeneNumber
@@ -158,11 +159,11 @@
 ## Main step7TopGenesDNAMethylationHeatmaps function
 
 #' Generate heatmaps displaying the methylation level of all RE DNA methylation
-#' sites linked to the top genes/transcription factors, along with the
+#' sites linked to the top genes and transcription factors, along with the
 #' expression of those genes in the column headers, in the case samples within
 #' the supplied MultiAssayExperiment object
 #'
-#' This function takes the top genes/transcription factors (TFs) for each
+# #' This function takes the top genes and transcription factors (TFs) for each
 #' analysis type by number of linked RE DNA methylation sites identified by the
 #' `step6DNAMethylationSitesPerGeneTabulation` function, up to the number
 #' specified by the user, and generates heatmaps displaying the methylation
@@ -171,10 +172,10 @@
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
-#' one created by the TCGADownloader function. This MultiAssayExperiment object
-#' should also contain the results from the
-#' step2GetDifferentiallyMethylatedSites, `step5OptimizeLinks`, and
-#' `step6DNAMethylationSitesPerGeneTabulation` functions in its metadata.
+#' one created by the TCGADownloader function. The object's metadata must also
+#' contain the results from the `step2GetDifferentiallyMethylatedSites,
+#' `step5OptimizeLinks`, and `step6DNAMethylationSitesPerGeneTabulation`
+#' functions.
 #' @param geneAnnotationDataset Specify a gene annotation dataset which is
 #' used to identify names for genes by their Ensembl IDs. The argument must be
 #' either a GRanges object (such as one imported via `rtracklayer::import`) or a
@@ -182,37 +183,36 @@
 #' supported. Other annotation datasets may work, but have not been tested.
 #' See the "Input data" section of the vignette for information on the required
 #' dataset format.
-#' Specify NA to use the names for genes listed in the "geneName" column of the
+#' Specify NA to use the gene names listed in the "geneName" column of the
 #' elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 #' object within the TENETMultiAssayExperiment object. Defaults to NA.
-#' @param hypermethGplusAnalysis Set to TRUE to create heatmaps showing DNA
-#' methylation levels of RE DNA methylation sites linked to the top genes/TFs
-#' with the most hypermethylated RE DNA methylation sites with G+ links.
+#' @param hypermethGplusAnalysis Set to TRUE to create heatmaps showing the
+#' methylation levels of RE DNA methylation sites linked to the top genes and
+#' TFs with the most hypermethylated RE DNA methylation sites with G+ links.
 #' Defaults to TRUE.
-#' @param hypomethGplusAnalysis Set to TRUE to create heatmaps showing DNA
-#' methylation levels of RE DNA methylation sites linked to the top genes/TFs
-#' with the most hypomethylated RE DNA methylation sites with G+ links.
+#' @param hypomethGplusAnalysis Set to TRUE to create heatmaps showing the
+#' methylation levels of RE DNA methylation sites linked to the top genes and
+#' TFs with the most hypomethylated RE DNA methylation sites with G+ links.
 #' Defaults to TRUE.
-#' @param topGeneNumber Specify the number of top genes/TFs, based on the most
-#' linked RE DNA methylation sites of a given analysis type, for which to
+#' @param topGeneNumber Specify the number of top genes and TFs, based on the
+#' most linked RE DNA methylation sites of a given analysis type, for which to
 #' generate heatmaps with their linked RE DNA methylation sites' methylation
 #' levels. Defaults to 10.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of information
-#' named 'step7TopGenesDNAMethylationHeatmaps' in its metadata with the output
-#' of this function. This list is subdivided into hypermethGplus or
-#' hypomethGplus results as selected by the user, which are further subdivided
-#' into lists with data for the top overall genes and for top TF genes only.
-#' Each of these contains a single heatmap, with the expression of the top
+#' TENETMultiAssayExperiment argument with an additional list named
+#' 'step7TopGenesDNAMethylationHeatmaps' in its metadata containing the output
+#' of this function. This list contains `hypermethGplus` and/or `hypomethGplus`
+#' lists, as selected by the user, which contain heatmaps for the top overall
+#' genes and the top TF genes. These heatmaps show the expression of the top
 #' genes/TFs in the column headers and the methylation of their unique linked
-#' RE DNA methylation sites in the body of the heatmaps.
+#' RE DNA methylation sites in the body.
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package to create heatmaps for the top 10 genes/TFs,
-#' ## by number of linked hyper- or hypomethylated RE DNA methylation sites, as
-#' ## well as the unique RE DNA methylation sites linked to those 10 genes.
+#' ## TENET.ExperimentHub package to create heatmaps for the top 10 genes and
+#' ## TFs by number of linked hyper- and hypomethylated RE DNA methylation
+#' ## sites and the unique RE DNA methylation sites linked to those genes.
 #' ## Gene names will be retrieved from the rowRanges of the 'expression'
 #' ## SummarizedExperiment object in the example MultiAssayExperiment.
 #'
@@ -226,13 +226,8 @@
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 #' )
 #'
-#' ## This example uses the example MultiAssayExperiment provided in the
-#' ## TENET.ExperimentHub package to create heatmaps for only the top 5
-#' ## genes/TFs, by number of linked hypomethylated RE DNA methylation sites
-#' ## only, as well as the unique RE DNA methylation sites linked to those 5
-#' ## genes/TFs. Gene names will be retrieved from the rowRanges of the
-#' ## 'expression' SummarizedExperiment object in the example
-#' ## MultiAssayExperiment.
+#' ## This example is similar, but creates heatmaps for only the top 5 genes
+#' ## and TFs by number of linked hypomethylated RE DNA methylation sites.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -246,11 +241,12 @@
 #'     topGeneNumber = 5
 #' )
 step7TopGenesDNAMethylationHeatmaps <- function(
-    TENETMultiAssayExperiment,
-    geneAnnotationDataset = NA,
-    hypermethGplusAnalysis = TRUE,
-    hypomethGplusAnalysis = TRUE,
-    topGeneNumber = 10) {
+  TENETMultiAssayExperiment,
+  geneAnnotationDataset = NA,
+  hypermethGplusAnalysis = TRUE,
+  hypomethGplusAnalysis = TRUE,
+  topGeneNumber = 10
+) {
     ## Validate the analysis types and get a vector of the ones selected
     analysisTypes <- .validateAnalysisTypes(
         hypermethGplusAnalysis, hypomethGplusAnalysis
@@ -259,7 +255,7 @@ step7TopGenesDNAMethylationHeatmaps <- function(
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(
         TENETMultiAssayExperiment,
-        needGeneName = is.na(geneAnnotationDataset)
+        needGeneNames = is.na(geneAnnotationDataset)
     )
 
     ## Ensure the output data from the step2GetDifferentiallyMethylatedSites

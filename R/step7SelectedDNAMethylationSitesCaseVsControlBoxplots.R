@@ -18,12 +18,12 @@
 #' @param coreCount Argument passed as the mc.cores argument to mcmapply. See
 #' `?parallel::mcmapply` for more details. Defaults to 1.
 #' @return Returns the MultiAssayExperiment object given as the
-#' TENETMultiAssayExperiment argument with an additional list of data named
-#' 'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata with
-#' the output of this function, which contains boxplots or violin plots showing
-#' the methylation of the RE DNA methylation sites of interest in the case and
-#' control samples, with Student's t-test p-values and the ID of the RE DNA
-#' methylation site in the title.
+#' TENETMultiAssayExperiment argument with an additional list named
+#' 'step7SelectedDNAMethylationSitesCaseVsControlBoxplots' in its metadata,
+#' which contains boxplots or violin plots comparing the methylation of the RE
+#' DNA methylation sites of interest in the case and control samples. The titles
+#' of the plots contain the ID of the RE DNA methylation site and the Student's
+#' t-test p-value.
 #' @export
 #'
 #' @examplesIf interactive()
@@ -36,18 +36,18 @@
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Use the example dataset to create RE DNA methylation site case vs. control
-#' ## boxplots
+#' ## Use the example dataset to create the boxplots
 #' returnValue <- step7SelectedDNAMethylationSitesCaseVsControlBoxplots(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     DNAMethylationSites = c("cg03095778", "cg24011501", "cg12989041"),
 #'     coreCount = 1
 #' )
 step7SelectedDNAMethylationSitesCaseVsControlBoxplots <- function(
-    TENETMultiAssayExperiment,
-    DNAMethylationSites,
-    violinPlots = FALSE,
-    coreCount = 1) {
+  TENETMultiAssayExperiment,
+  DNAMethylationSites,
+  violinPlots = FALSE,
+  coreCount = 1
+) {
     ## Return an error message if the input MultiAssayExperiment is invalid
     .validateMultiAssayExperiment(TENETMultiAssayExperiment)
 

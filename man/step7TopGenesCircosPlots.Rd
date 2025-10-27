@@ -2,8 +2,8 @@
 % Please edit documentation in R/step7TopGenesCircosPlots.R
 \name{step7TopGenesCircosPlots}
 \alias{step7TopGenesCircosPlots}
-\title{Generate Circos plots displaying the links between top identified genes and
-each of the RE DNA methylation sites linked to them}
+\title{Generate Circos plots displaying the links between the top identified genes
+and each of the RE DNA methylation sites linked to them}
 \usage{
 step7TopGenesCircosPlots(
   TENETMultiAssayExperiment,
@@ -18,9 +18,9 @@ step7TopGenesCircosPlots(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such as
-one created by the TCGADownloader function. This MultiAssayExperiment object
-should also contain the results from the \code{step5OptimizeLinks} and
-\code{step6DNAMethylationSitesPerGeneTabulation} functions in its metadata.}
+one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step5OptimizeLinks} and
+\code{step6DNAMethylationSitesPerGeneTabulation} functions.}
 
 \item{DNAMethylationArray}{Specify the name of a DNA methylation probe array
 supported by the sesameData package (see
@@ -40,52 +40,51 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
 \item{hypermethGplusAnalysis}{Set to TRUE to create Circos plots displaying
-links between the top genes/TFs by most hypermethylated RE DNA methylation
-sites with G+ links and their linked RE DNA methylation sites of that type.
-Defaults to TRUE.}
+genomic links between the top genes and TFs by most hypermethylated RE DNA
+methylation sites with G+ links and their linked RE DNA methylation sites of
+that type. Defaults to TRUE.}
 
 \item{hypomethGplusAnalysis}{Set to TRUE to create Circos plots displaying
-links between the top genes/TFs by most hypomethylated RE DNA methylation
-sites with G+ links and their linked RE DNA methylation sites of that type.
-Defaults to TRUE.}
+genomic links between the top genes and TFs by most hypomethylated RE DNA
+methylation sites with G+ links and their linked RE DNA methylation sites of
+that type. Defaults to TRUE.}
 
-\item{topGeneNumber}{Specify the number of top genes/TFs, based on the most
+\item{topGeneNumber}{Specify the number of top genes and TFs, by number of
 linked RE DNA methylation sites of a given analysis type, for which to
-generate Circos plots showing the links between the genes and each of their
-linked RE DNA methylation sites. Defaults to 10.}
+generate Circos plots showing genomic links between the genes and each of
+their linked RE DNA methylation sites. Defaults to 10.}
 
 \item{coreCount}{Argument passed as the mc.cores argument to mclapply. See
 \code{?parallel::mclapply} for more details. Defaults to 1.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of information
-named 'step7TopGenesCircosPlots' in its metadata with the output of this
-function. This list is subdivided into hypermethGplus or hypomethGplus
-results as selected by the user, which are further subdivided into lists
-with data for the top overall genes and for top TF genes only. Each of these
-lists contain Circos plots for each of the top genes/TFs visualizing the
-links between the genes and their linked RE DNA methylation sites for the
-selected analysis types.
+TENETMultiAssayExperiment argument with an additional list named
+'step7TopGenesCircosPlots' in its metadata containing the output of this
+function. This list contains \code{hypermethGplus} and/or \code{hypomethGplus} lists,
+as selected by the user, which contain lists for the top overall genes and
+the top TF genes. These lists contain Circos plots visualizing the genomic
+links between each gene and its linked RE DNA methylation sites for the
+selected analysis type.
 }
 \description{
-This function takes the top genes/TFs by number of linked regulatory element
-DNA methylation sites identified by the
+This function takes the top genes and TFs by number of linked regulatory
+element DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
 specified by the user, and generates Circos plots for each gene showing the
 genomic links between each gene and each RE DNA methylation site linked to
 the gene for the analysis types specified.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to create Circos plots for the top 10
-## genes/TFs, by number of linked hyper- or hypomethylated RE DNA
+## genes and TFs by number of linked hyper- and hypomethylated RE DNA
 ## methylation sites. Gene names and locations and RE DNA methylation site
 ## locations will be retrieved from the rowRanges of the 'expression' and
 ## 'methylation' SummarizedExperiment objects in the example
@@ -101,14 +100,10 @@ returnValue <- step7TopGenesCircosPlots(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example uses the example MultiAssayExperiment provided in the
-## TENET.ExperimentHub package to create Circos plots for the top 5
-## genes/TFs, by number of linked hypomethylated RE DNA methylation sites
-## only. Gene names and locations will be retrieved from the rowRanges of
-## the 'expression' and 'methylation' SummarizedExperiment objects in the
-## example MultiAssayExperiment. RE DNA methylation site IDs and locations
-## will be retrieved from the HM450 array via the sesameData package. Eight
-## CPU cores will be used to create plots.
+## This example is similar, but creates Circos plots for only the top 5 genes
+## and TFs by number of linked hypomethylated RE DNA methylation sites.
+## RE DNA methylation site IDs and locations are retrieved from the
+## HM450 array via the sesameData package, and eight CPU cores are used.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package

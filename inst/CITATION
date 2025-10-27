@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Article",
+  title    = "Tracing regulatory element networks using epigenetic traits to identify key transcription factors: TENET R/Bioconductor package",
+  author   = c(person(c("Daniel", "J"), "Mullen"), person("Zexun", "Wu"), person("Ethan", "Nelson-Moore"), person("Huan", "Cao"), person("Lauren", "Han"), person(c("Ite", "A"), "Offringa"), person(c("Suhn", "K"), "Rhie", email = "rhie@usc.edu", comment = c(ORCID="0000-0002-5522-5296"))),
+  journal  = "Bioinformatics",
+  year     = "2025",
+  volume   = "41",
+  number   = "btaf435",
+  doi      = "10.1093/bioinformatics/btaf435",
+  url	   = "https://doi.org/10.1093/bioinformatics/btaf435"
+)

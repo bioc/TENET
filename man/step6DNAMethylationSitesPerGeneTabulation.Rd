@@ -2,8 +2,7 @@
 % Please edit documentation in R/step6DNAMethylationSitesPerGeneTabulation.R
 \name{step6DNAMethylationSitesPerGeneTabulation}
 \alias{step6DNAMethylationSitesPerGeneTabulation}
-\title{Tabulate the total number of RE DNA methylation sites linked to each of the
-genes}
+\title{Tabulate the total number of RE DNA methylation sites linked to each gene}
 \usage{
 step6DNAMethylationSitesPerGeneTabulation(
   TENETMultiAssayExperiment,
@@ -15,9 +14,8 @@ step6DNAMethylationSitesPerGeneTabulation(
 \arguments{
 \item{TENETMultiAssayExperiment}{Specify a MultiAssayExperiment object
 containing expression and methylation SummarizedExperiment objects, such
-as one created by the TCGADownloader function. This MultiAssayExperiment
-object should also contain the results from the \code{step5OptimizeLinks}
-function in its metadata.}
+as one created by the TCGADownloader function. The object's metadata must
+contain the results from the \code{step5OptimizeLinks} function.}
 
 \item{geneAnnotationDataset}{Specify a gene annotation dataset which is
 used to identify names for genes by their Ensembl IDs. The argument must be
@@ -26,39 +24,37 @@ path to a GFF3 or GTF file. Both GENCODE and Ensembl annotations are
 supported. Other annotation datasets may work, but have not been tested.
 See the "Input data" section of the vignette for information on the required
 dataset format.
-Specify NA to use the names for genes listed in the "geneName" column of the
+Specify NA to use the gene names listed in the "geneName" column of the
 elementMetadata of the rowRanges of the "expression" SummarizedExperiment
 object within the TENETMultiAssayExperiment object. Defaults to NA.}
 
-\item{hypermethGplusAnalysis}{Set to TRUE to calculate total links by
+\item{hypermethGplusAnalysis}{Set to TRUE to calculate total links per
 gene for hypermethylated RE DNA methylation sites with G+ links. Defaults to
 TRUE.}
 
-\item{hypomethGplusAnalysis}{Set to TRUE to calculate total links by
+\item{hypomethGplusAnalysis}{Set to TRUE to calculate total links per
 gene for hypomethylated RE DNA methylation sites with G+ links. Defaults to
 TRUE.}
 }
 \value{
 Returns the MultiAssayExperiment object given as the
-TENETMultiAssayExperiment argument with an additional list of data named
-"step6DNAMethylationSitesPerGeneTabulation" in its metadata with the output
-of this function, which includes data frames containing significant hyper-
-and/or hypomethylated G+ link counts per gene after all TENET steps through
-\code{step5OptimizeLinks} have been run.
+TENETMultiAssayExperiment argument with an additional list named
+"step6DNAMethylationSitesPerGeneTabulation" in its metadata containing the
+output of this function. This list contains \code{hypermethGplus} and/or
+\code{hypomethGplus} data frames, as selected by the user, containing significant
+hyper- or hypomethylated G+ link counts per gene.
 }
 \description{
-This function takes the final optimized regulatory element
-RE DNA methylation site-gene links identified by the \code{step5OptimizeLinks}
-function and tabulates the number of these links per gene. This tabulation is
-done separately for both of the hyper- or hypomethylated G+ analysis
-quadrants, as selected by the user.
+This function takes the final optimized RE DNA methylation site-gene links
+identified in step 5 and tabulates the number of links per gene separately
+for the hyper- and/or hypomethylated G+ analysis quadrants.
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 ## This example uses the example MultiAssayExperiment provided in the
 ## TENET.ExperimentHub package to tabulate both hyper- and hypomethylated G+
-## RE DNA methylation site-gene links, using genes with names provided in the
-## provided MultiAssayExperiment object.
+## RE DNA methylation site-gene links, using gene names from the input
+## MultiAssayExperiment object.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
@@ -70,9 +66,8 @@ returnValue <- step6DNAMethylationSitesPerGeneTabulation(
     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment
 )
 
-## This example also uses the example MultiAssayExperiment provided
-## in the TENET.ExperimentHub package, but it only runs on hypomethylated
-## RE DNA methylation sites.
+## This example is similar, but only analyzes hypomethylated RE DNA
+## methylation sites.
 
 ## Load the example TENET MultiAssayExperiment object
 ## from the TENET.ExperimentHub package
