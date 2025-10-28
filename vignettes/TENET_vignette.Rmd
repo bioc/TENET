@@ -275,9 +275,6 @@ assays(
 ]
 ```
 
-
----
-
 Genomic coordinates for RE DNA methylation sites can be provided as a GRanges
 object via the rowRanges of the "expression" SummarizedExperiment object, or
 retrieved for probes in one of the Illumina methylation arrays supported by the
