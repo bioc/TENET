@@ -45,12 +45,12 @@ lacks methylation data for the site or expression data for the gene.
 This function generates data frames indicating whether each of the case
 samples harbors each RE DNA methylation site-gene link from the hyper- and/or
 hypomethylated G+ analysis quadrants. A given sample harbors a link if the
-methylation of the linked RE DNA methylation site in that sample is above or
-below the hyper- or hypomethylation cutoff defined in the
-\code{step2GetDifferentiallyMethylatedSites} function and the expression of the
-linked gene in that sample is significantly greater than, or less than, the
-mean expression in the control samples, as determined by a
-Bonferroni-corrected 1-sided t-test with a p-value threshold of 0.05.
+RE DNA methylation site in the link is hyper- and/or hypomethylated in that
+sample, and if expression of the gene in the link in that sample is
+significantly less than or greater than, respectively, the mean expression of
+the gene in the control samples, as determined by a
+Bonferroni-corrected 1-sided t-test with a p-value threshold of 0.05. This
+may aid in identifying case samples for further analyses.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

@@ -1,16 +1,15 @@
 #' Run the step 1 through step 6 functions with default arguments
 #'
-#' This function combines the step 1 through step 6 functions
-#' (`step1MakeExternalDatasets`, `step2GetDifferentiallyMethylatedSites`,
-#' `step3GetAnalysisZScores`,
+#' This function runs the main six TENET functions (`step1MakeExternalDatasets`,
+#' `step2GetDifferentiallyMethylatedSites`, `step3GetAnalysisZScores`,
 #' `step4SelectMostSignificantLinksPerDNAMethylationSite`, `step5OptimizeLinks`,
-#' and `step6DNAMethylationSitesPerGeneTabulation`) into a single function.
-#' Arguments for this function generally reflect the arguments of the component
-#' functions without clearly defined defaults, with the exception of the
-#' `step1MakeExternalDatasets` function where all arguments have been included
-#' to support all of the options available to the user to define regions with
-#' relevant regulatory elements. All remaining arguments of the component
-#' functions are set to their default values.
+#' and `step6DNAMethylationSitesPerGeneTabulation`) in sequence on the specified
+#' TENETMultiAssayExperiment object. Arguments for this function generally
+#' reflect the arguments of the component functions without clearly defined
+#' defaults, with the exception of the `step1MakeExternalDatasets` function
+#' where all arguments have been included to support all available options to
+#' define regions with relevant regulatory elements. All remaining arguments of
+#' the component functions are set to their default values.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects,

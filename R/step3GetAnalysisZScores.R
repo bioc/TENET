@@ -122,14 +122,14 @@
 #' samples that are hyper- and/or hypomethylated for each RE DNA methylation
 #' site identified in step 2
 #'
-#' This function takes the identified hyper- and/or hypomethylated RE DNA
-#' methylation sites from the `step2GetDifferentiallyMethylatedSites` function
-#' and calculates Z-scores comparing the mean expression of each gene in the
-#' case samples that are hyper- or hypomethylated for each RE DNA methylation
-#' site, according to the methylation cutoffs set in step 2, to those that are
-#' not, across all hyper- or hypomethylated RE DNA methylation sites,
-#' calculating Z-scores for each unique RE DNA methylation site and gene
-#' combination, also known as a link.
+#' This function calculates Z-scores comparing the mean expression of each gene
+#' in the case samples that are hyper- and/or hypomethylated for each RE DNA
+#' methylation site identified in step 2, according to the methylation cutoffs
+#' set in step 2, to the mean expression of the remaining non-hyper- or
+#' hypomethylated case samples. By identifying significant Z-scores, initial
+#' RE DNA methylation site-gene links are identified, in the form of case
+#' samples with hyper- or hypomethylation of a particular RE DNA methylation
+#' site also displaying particularly high or low expression of specific genes.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects,

@@ -1,7 +1,7 @@
 #' @title Human transcription factor list
 #'
-#' @description A character vector of gene Ensembl IDs which were identified as
-#' human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
+#' @description A character vector of the Ensembl IDs of genes identified
+#' as human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
 #' manually examined by a panel of experts based on available data. Proteins
 #' with experimentally demonstrated DNA binding specificity were considered TFs.
 #' Other proteins, such as co-factors and RNA binding proteins, were classified
@@ -24,7 +24,7 @@
 
 #' @title Human transcription factor database
 #'
-#' @description A data frame with information on TFs which were identified as
+#' @description A data frame with information on genes identified as
 #' human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
 #' manually examined by a panel of experts based on available data. Proteins
 #' with experimentally demonstrated DNA binding specificity were considered TFs.

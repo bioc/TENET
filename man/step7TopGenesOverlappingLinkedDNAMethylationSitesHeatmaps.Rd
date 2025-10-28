@@ -57,8 +57,9 @@ contain lists for the top overall genes and top TF genes. These lists contain
 binary heatmaps displaying the top genes/TFs in the columns and the unique RE
 DNA methylation sites linked to these genes in the rows, with black
 indicating that the given RE DNA methylation site is linked to the given
-gene. Data frames are also included which represent these links numerically,
-with 1s indicating a link is present.
+gene. Dendrograms are included to identify blocks of RE DNA methylation sites
+that are linked to similar genes. Data frames are also included which
+represent the links numerically, with 1s indicating a link is present.
 }
 \description{
 This function takes the top genes and TFs for each analysis type by number of

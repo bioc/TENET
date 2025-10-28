@@ -10,7 +10,6 @@
   clinicalObject,
   TENETMultiAssayExperiment,
   survivalGroupingCutoffs,
-  useJenksBreaks,
   jenksBreaksGroupCount,
   createPlot ## Affects plots for KM only
 ) {
@@ -139,7 +138,7 @@
     ### Determine the groups of interest
 
     ## If Jenks breaks were selected, we need to calculate where they are
-    if (useJenksBreaks) {
+    if (!is.na(jenksBreaksGroupCount)) {
         ## Add one to the jenksBreaksGroupCount, because the
         ## BAMMtools::getJenksBreaks function includes the lowest and highest
         ## bounds, so it actually creates one less group.
@@ -747,7 +746,6 @@
   genesOrMethSites,
   statsOrPlots, ## Return stats ("Stats") or plots ("Plots")
   survivalGroupingCutoffs,
-  useJenksBreaks,
   jenksBreaksGroupCount,
   coreCount
 ) {
@@ -808,7 +806,6 @@
                         clinicalObject = clinicalObject,
                         TENETMultiAssayExperiment = TENETMultiAssayExperiment,
                         survivalGroupingCutoffs = survivalGroupingCutoffs,
-                        useJenksBreaks = useJenksBreaks,
                         jenksBreaksGroupCount = jenksBreaksGroupCount,
                         createPlot = FALSE,
                         mc.cores = coreCount
@@ -829,7 +826,6 @@
                 clinicalObject = clinicalObject,
                 TENETMultiAssayExperiment = TENETMultiAssayExperiment,
                 survivalGroupingCutoffs = survivalGroupingCutoffs,
-                useJenksBreaks = useJenksBreaks,
                 jenksBreaksGroupCount = jenksBreaksGroupCount,
                 createPlot = TRUE,
                 mc.cores = coreCount
@@ -893,7 +889,6 @@
                         clinicalObject = clinicalObject,
                         TENETMultiAssayExperiment = TENETMultiAssayExperiment,
                         survivalGroupingCutoffs = survivalGroupingCutoffs,
-                        useJenksBreaks = useJenksBreaks,
                         jenksBreaksGroupCount = jenksBreaksGroupCount,
                         createPlot = FALSE,
                         mc.cores = coreCount
@@ -918,7 +913,6 @@
                 clinicalObject = clinicalObject,
                 TENETMultiAssayExperiment = TENETMultiAssayExperiment,
                 survivalGroupingCutoffs = survivalGroupingCutoffs,
-                useJenksBreaks = useJenksBreaks,
                 jenksBreaksGroupCount = jenksBreaksGroupCount,
                 createPlot = TRUE,
                 mc.cores = coreCount
@@ -931,18 +925,18 @@
     }
 }
 
-#' Perform Kaplan-Meier and Cox regression analyses to assess the association
-#' of top gene expression and linked RE DNA methylation site methylation with
-#' patient survival
+#' Perform Kaplan-Meier and Cox regression analyses to assess the association of
+#' patient survival with the expression of top genes and transcription factors
+#' and methylation of their linked RE DNA methylation sites
 #'
 #' This function takes the top genes and transcription factors (TFs) by number
 #' of linked RE DNA methylation sites identified by the
 #' `step6DNAMethylationSitesPerGeneTabulation` function, up to the number
-#' specified by the user, and generates plots and tables with statistics
-#' assessing the survival association of the expression of each gene and the
-#' methylation level of each RE DNA methylation site linked to each gene,
-#' using groupings based on either percentile cutoffs or Jenks natural breaks
-#' for Kaplan-Meier analyses.
+#' specified by the user, along with patient survival data, and generates plots
+#' and tables with statistics assessing the association of patient survival with
+#' the expression of top genes and transcription factors and methylation of
+#' their linked RE DNA methylation sites, using groupings based on percentile
+#' cutoffs or Jenks natural breaks for Kaplan-Meier analyses.
 #'
 #' @param TENETMultiAssayExperiment Specify a MultiAssayExperiment object
 #' containing expression and methylation SummarizedExperiment objects, such as
@@ -995,72 +989,60 @@
 #' TENETMultiAssayExperiment. Defaults to NA.
 #' @param highProportion Specify the proportion of all samples to include in the
 #' high expression/methylation group for Kaplan-Meier survival analyses as a
-#' number ranging from 0 to 1.  If values are specified for this
-#' and `lowProportion`, splitting the samples in this manner will supersede
-#' any arguments which are given for `survivalGroupingCutoffs`, `useJenksBreaks`
-#' and `jenksBreaksGroupCount`. Defaults to 0.5.
-#' @param lowProportion Set a number ranging from 0 to 1, indicating the
-#' proportion of all samples to include in the low expression/methylation
-#' group for Kaplan-Meier survival analyses. The total value of the
-#' highProportion and lowProportion arguments should not exceed 1. **Note:**
-#' If both this value and the highProportion value are set to 0.5, samples at
-#' exactly the 50th percentile will be assigned to the "Low" group. If values
-#' are specified for this and `highProportion`, splitting the samples in this
-#' manner will supersede any arguments which are given for
-#' `survivalGroupingCutoffs`, `useJenksBreaks` and `jenksBreaksGroupCount`.
-#' Defaults to 0.5.
+#' number ranging from 0 to 1. **Note:** If the `survivalGroupingCutoffs` or
+#' `jenksBreaksGroupCount` argument is specified, this argument will be
+#' ignored. Defaults to 0.5.
+#' @param lowProportion Specify the proportion of all samples to include in the
+#' low expression/methylation group for Kaplan-Meier survival analyses as a
+#' number ranging from 0 to 1. **Note:** If the `survivalGroupingCutoffs` or
+#' `jenksBreaksGroupCount` argument is specified, this argument will be
+#' ignored. If both `lowProportion` and `highProportion` are set to 0.5, samples
+#' at exactly the 50th percentile will be assigned to the "Low" group. Defaults
+#' to 0.5.
 #' @param survivalGroupingCutoffs To use custom sample grouping, specify a data
 #' frame or matrix with two columns and *n* rows, where *n* is the number of
 #' groups the samples should be broken into, and values ranging from 0 to 1
 #' reflecting the proportion of samples to include in each group. Values in the
 #' first column should reflect the minimum proportion, and values in the second
 #' column should reflect the maximum proportion (non-inclusive if not 1). If the
-#' object has row names, they will be used to name the groups. If this argument
-#' is specified, `useJenksBreaks` and `jenksBreaksGroupCount` will be ignored.
-#' Defaults to NA.
-#' @param useJenksBreaks Set to TRUE to automatically set cutoffs for the a
-#' number of groups as specified by the `jenksBreaksGroupCount` using Jenks
-#' natural breaks optimization. If this is TRUE, a value for the number of
-#' groups to be assessed must also be specified for the `jenksBreaksGroupCount`
-#' argument. Additionally, the `highProportion`, `lowProportion`, and
-#' `survivalGroupingCutoffs` arguments must be NA, as they supersede this
-#' analysis type. Defaults to FALSE.
-#' @param jenksBreaksGroupCount Set to a positive integer to specify the number
-#' of groups the survival data will be broken into, with cutoffs set between
-#' groups using Jenks natural breaks optimization. To use, `useJenksBreaks` must
-#' be TRUE. Defaults to NA to not use Jenks breaks.
-#' @param generatePlots Set to TRUE to create and save plots displaying the
-#' Kaplan-Meier survival results for the genes/TFs of interest, as well as the
-#' RE DNA methylation sites linked to them. Defaults to TRUE.
+#' object has row names, they will be used to name the groups. If specified, the
+#' `highProportion` and `lowProportion` arguments will be ignored. Defaults to
+#' NA.
+#' @param jenksBreaksGroupCount Specify the number of groups into which to break
+#' the survival data as a positive integer. Cutoffs for each group will be
+#' generated using Jenks natural breaks optimization. If specified, the
+#' `highProportion` and `lowProportion` arguments will be ignored. Defaults to
+#' NA.
+#' @param generatePlots Set to TRUE to generate plots displaying the
+#' Kaplan-Meier survival results for the top genes and TFs of interest and their
+#' linked RE DNA methylation sites. Defaults to TRUE.
 #' @param coreCount Argument passed as the mc.cores argument to mclapply. See
 #' `?parallel::mclapply` for more details. Defaults to 1.
 #' @return Returns the MultiAssayExperiment object given as the
 #' TENETMultiAssayExperiment argument with an additional list
 #' named 'step7TopGenesSurvival' in its metadata containing the output of this
-#' function. This list is subdivided into hypermethGplus or hypomethGplus
-#' results as selected by the user, which are further subdivided into lists with
-#' data for the top overall genes, and for top TF genes only. Each contains a
-#' list with data frames containing survival statistics for the top genes/TFs as
-#' well as their linked RE DNA methylation sites, from both Kaplan-Meier and Cox
-#' regression analyses. Additionally, they will also include a list of
-#' Kaplan-Meier plots if generatePlots is TRUE.
+#' function. This list contains `hypermethGplus` and/or `hypomethGplus` lists,
+#' as selected by the user, which contain lists for the top overall genes and
+#' top TF genes. Each contains a list of data frames containing survival
+#' statistics for the top genes/TFs and their linked RE DNA methylation sites
+#' from both Kaplan-Meier and Cox regression analyses, and a list of
+#' Kaplan-Meier plots if `generatePlots` is TRUE.
 #' @export
 #'
 #' @examplesIf interactive()
 #' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-#' ## survival analyses for the top 10 genes and TFs by number of linked hyper-
-#' ## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
-#' ## methylation sites linked to those 10 genes/TFs. The vital status and
+#' ## survival analyses on the top 10 genes and TFs by number of linked hyper-
+#' ## and hypomethylated RE DNA methylation sites, and on all unique RE DNA
+#' ## methylation sites linked to those genes. The vital status and
 #' ## survival time of patients will be taken from the "vital_status" and "time"
 #' ## columns of the colData of the example MultiAssayExperiment. Gene names
 #' ## will be retrieved from the rowRanges of the 'expression'
 #' ## SummarizedExperiment object in the example MultiAssayExperiment. In the
 #' ## Kaplan-Meier analyses, the patient samples with complete clinical
 #' ## information in the highest half of expression/methylation will be compared
-#' ## to the patient samples with complete clinical information in the lowest
-#' ## half. Kaplan-Meier plots will be saved for the genes and RE DNA
-#' ## methylation sites, and the analysis will be performed using one CPU core.
+#' ## with those in the lowest half, and plots will be generated. The analysis
+#' ## will be performed using one CPU core.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -1074,27 +1056,24 @@
 #'
 #' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-#' ## survival analyses for only the top 5 genes and TFs, by number of linked
-#' ## hypomethylated RE DNA methylation sites, and for all unique
-#' ## RE DNA methylation sites linked to those 5 genes/TFs only. The vital
-#' ## status and survival time of patients will be
-#' ## taken from specific columns in a separate data frame with example patient
-#' ## data from the TENET.ExperimentHub package. Gene names will be retrieved
-#' ## from the rowRanges of the 'expression' SummarizedExperiment object in the
-#' ## example MultiAssayExperiment. For Kaplan-Meier analyses, the patient
-#' ## samples with complete clinical information in the highest quartile of
-#' ## expression/methylation will be compared to the patient samples with
-#' ## complete clinical information in the lowest quartile. Kaplan-Meier plots
-#' ## will not be saved for the genes and RE DNA methylation sites, and the
-#' ## analysis will be performed using 8 CPU cores.
+#' ## survival analyses on only the top 5 genes and TFs by number of linked
+#' ## hypomethylated RE DNA methylation sites, and on all unique
+#' ## RE DNA methylation sites linked to those genes. The vital
+#' ## status and survival time of patients will be retrieved from a data frame
+#' ## with example patient data from the TENET.ExperimentHub package. Gene names
+#' ## will be retrieved from the rowRanges of the 'expression'
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. In the
+#' ## Kaplan-Meier analyses, the patient samples with complete clinical
+#' ## information in the highest quartile of expression/methylation will be
+#' ## compared with those in the lowest quartile, and plots will not be
+#' ## generated. The analysis will be performed using 8 CPU cores.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Again, this loads the data frame with example clinical data for patients
-#' ## in the TENET MultiAssayExperiment object from the TENET.ExperimentHub
+#' ## Load the example clinical data frame from the TENET.ExperimentHub
 #' ## package
 #' exampleTENETClinicalDataFrame <-
 #'     TENET.ExperimentHub::exampleTENETClinicalDataFrame()
@@ -1104,8 +1083,8 @@
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
 #'     hypermethGplusAnalysis = FALSE,
 #'     topGeneNumber = 5,
-#'     vitalStatusData = exampleTENETClinicalDataFrame["vital_status"],
-#'     survivalTimeData = exampleTENETClinicalDataFrame["time"],
+#'     vitalStatusData = exampleTENETClinicalDataFrame$vital_status,
+#'     survivalTimeData = exampleTENETClinicalDataFrame$time,
 #'     highProportion = 0.25,
 #'     lowProportion = 0.25,
 #'     generatePlots = FALSE,
@@ -1114,25 +1093,24 @@
 #'
 #' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-#' ## survival analyses for the top 10 genes and TFs, by number of linked hyper-
-#' ## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
-#' ## methylation sites linked to those 10 genes/TFs. The vital status and
+#' ## survival analyses on the top 10 genes and TFs by number of linked hyper-
+#' ## and hypomethylated RE DNA methylation sites, and on all unique RE DNA
+#' ## methylation sites linked to those genes. The vital status and
 #' ## survival time of patients will be taken from the "vital_status" and "time"
-#' ## columns present in the colData of the example MultiAssayExperiment. Gene
-#' ## names will be retrieved from the rowRanges of the 'expression'
-#' ## SummarizedExperiment object in the example MultiAssayExperiment. For
-#' ## survival analyses, custom cutoffs representing quartiles will be used, and
-#' ## Kaplan-Meier plots will be saved for the genes and RE DNA methylation
-#' ## sites, and the analysis will be performed using one CPU core.
+#' ## columns of the colData of the example MultiAssayExperiment. Gene names
+#' ## will be retrieved from the rowRanges of the 'expression'
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. In the
+#' ## Kaplan-Meier analyses, custom group cutoffs representing quartiles will be
+#' ## used, and plots will be generated. The analysis will be performed using
+#' ## one CPU core.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
 #' exampleTENETMultiAssayExperiment <-
 #'     TENET.ExperimentHub::exampleTENETMultiAssayExperiment()
 #'
-#' ## Create a custom cutoff matrix which will split the samples into quartiles
-#' ## for the purposes of the survival analyses and will also define custom
-#' ## names for these groups
+#' ## Create an example cutoff matrix which will split the samples into
+#' ## quartiles and define custom names for the resulting groups
 #' cutoffMatrix <- data.frame(
 #'     "Low" = c(0, (1 / 4), (1 / 2), (3 / 4)),
 #'     "High" = c((1 / 4), (1 / 2), (3 / 4), 1)
@@ -1147,24 +1125,21 @@
 #' ## Use the example dataset and cutoffMatrix to perform the survival analysis
 #' returnValue <- step7TopGenesSurvival(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
-#'     highProportion = NA,
-#'     lowProportion = NA,
 #'     survivalGroupingCutoffs = cutoffMatrix
 #' )
 #'
-#' ## This final example uses the example MultiAssayExperiment provided in the
+#' ## This example uses the example MultiAssayExperiment provided in the
 #' ## TENET.ExperimentHub package to perform Kaplan-Meier and Cox regression
-#' ## survival analyses for the top 10 genes and TFs, by number of linked hyper-
-#' ## and hypomethylated RE DNA methylation sites, and for all unique RE DNA
-#' ## methylation sites linked to those 10 genes/TFs. The vital status and
+#' ## survival analyses on the top 10 genes and TFs by number of linked hyper-
+#' ## and hypomethylated RE DNA methylation sites, and on all unique RE DNA
+#' ## methylation sites linked to those genes. The vital status and
 #' ## survival time of patients will be taken from the "vital_status" and "time"
-#' ## columns present in the colData of the example MultiAssayExperiment. Gene
-#' ## names will be retrieved from the rowRanges of the 'expression'
-#' ## SummarizedExperiment object in the example MultiAssayExperiment. For
-#' ## survival analyses, Jenks natural breaks optimization will be used to
-#' ## determine cutoffs for 3 groups in the survival analysis.
-#' ## Kaplan-Meier plots will be saved for the genes and RE DNA methylation
-#' ## sites, and the analysis will be performed using one CPU core.
+#' ## columns of the colData of the example MultiAssayExperiment. Gene names
+#' ## will be retrieved from the rowRanges of the 'expression'
+#' ## SummarizedExperiment object in the example MultiAssayExperiment. In the
+#' ## Kaplan-Meier analyses, the samples will be divided into 3 groups using
+#' ## Jenks natural breaks optimization, and plots will be generated. The
+#' ## analysis will be performed using one CPU core.
 #'
 #' ## Load the example TENET MultiAssayExperiment object
 #' ## from the TENET.ExperimentHub package
@@ -1174,9 +1149,6 @@
 #' ## Use the example dataset to perform the survival analysis
 #' returnValue <- step7TopGenesSurvival(
 #'     TENETMultiAssayExperiment = exampleTENETMultiAssayExperiment,
-#'     highProportion = NA,
-#'     lowProportion = NA,
-#'     useJenksBreaks = TRUE,
 #'     jenksBreaksGroupCount = 3
 #' )
 step7TopGenesSurvival <- function(
@@ -1190,7 +1162,6 @@ step7TopGenesSurvival <- function(
   highProportion = 0.5,
   lowProportion = 0.5,
   survivalGroupingCutoffs = NA,
-  useJenksBreaks = FALSE,
   jenksBreaksGroupCount = NA,
   generatePlots = TRUE,
   coreCount = 1
@@ -1207,26 +1178,28 @@ step7TopGenesSurvival <- function(
     )
 
     ## Validate settings of the highProportion, lowProportion,
-    ## survivalGroupingCutoffs, useJenksBreaks, and jenksBreaksGroupCount
-    ## values.
-    ## We want to use the following hierarchy: If the user has specified valid
-    ## highProportion and lowProportion values, use them regardless of the other
-    ## settings. If they aren't set (are NA), first check to see if the user
-    ## has provided a valid survivalGroupingCutoffs dataset. If that hasn't been
-    ## provided, then check if the user has specified valid useJenksBreaks
-    ## and jenksBreaksGroupCount values.
+    ## survivalGroupingCutoffs, and jenksBreaksGroupCount values.
+    ## First check if the user has provided a valid survivalGroupingCutoffs
+    ## dataset. If not, check if the user has specified a valid
+    ## jenksBreaksGroupCount value. Otherwise, check for highProportion and
+    ## lowProportion.
 
-    ## Check if any of the high/lowProportion values are specified
-    if (!is.na(highProportion) || !is.na(lowProportion)) {
-        ## If only one is NA, return an error
-        if (is.na(highProportion) || is.na(lowProportion)) {
+    if (!.isSingleNA(survivalGroupingCutoffs) &&
+        !is.na(jenksBreaksGroupCount)) {
+        .stopNoCall(
+            "Only one of the survivalGroupingCutoffs or ",
+            "jenksBreaksGroupCount arguments may be specified."
+        )
+    }
+
+    ## Check if both of the high/lowProportion values are valid, if they
+    ## will be used
+    if (.isSingleNA(survivalGroupingCutoffs) && is.na(jenksBreaksGroupCount)) {
+        if (any(is.na(c(highProportion, lowProportion)))) {
             .stopNoCall(
-                "Only one of the highProportion or lowProportion arguments ",
-                "has been set. Please ensure that both arguments are numbers ",
-                "ranging from 0 to 1, with their total not exceeding 1, ",
-                "or that both are set to NA and valid settings are provided ",
-                "for the survivalGroupingCutoffs, useJenksBreaks, and ",
-                "jenksBreaksGroupCount arguments."
+                "Both the highProportion and lowProportion arguments must be ",
+                "specified if the survivalGroupingCutoffs or ",
+                "jenksBreaksGroupCount argument is not specified."
             )
         }
 
@@ -1259,7 +1232,7 @@ step7TopGenesSurvival <- function(
         rownames(survivalGroupingCutoffs) <- c("low", "high")
     }
 
-    ## Validate the survivalGroupingCutoffs
+    ## Validate the survivalGroupingCutoffs argument
     if (!.isSingleNA(survivalGroupingCutoffs)) {
         ## Ensure that if supplied, survivalGroupingCutoffs is either a
         ## matrix or data frame
@@ -1395,26 +1368,6 @@ step7TopGenesSurvival <- function(
                 "the first column, the lowest minimum cutoff is 0, and the ",
                 "highest maximum cutoff is 1."
             )
-        }
-
-        ## Finally, if the user has also set useJenksBreaks to TRUE and/or set
-        ## a jenksBreaksGroupCount value, warn them that Jenks breaks won't be
-        ## used since a survivalGroupingCutoff object has been specified
-        if (useJenksBreaks || !is.na(jenksBreaksGroupCount)) {
-            .warningNoCall(
-                "Although useJenksBreaks has been set to TRUE and/or a ",
-                "jenksBreaksGroupCount has been set, these values will not be ",
-                "utilized as a valid survivalGroupingCutoffs object has been ",
-                "supplied to define the groups for survival analysis. If you ",
-                "would like to use Jenks natural breaks classification to set ",
-                "groups instead, please rerun the analysis and set ",
-                "survivalGroupingCutoffs to NA or leave the argument undefined."
-            )
-
-            ## Set useJenksBreaks to be FALSE and jenksBreaksGroupCount to be NA
-            ## to ensure they aren't used later in the function
-            useJenksBreaks <- FALSE
-            jenksBreaksGroupCount <- NA
         }
     }
 
@@ -1575,7 +1528,6 @@ step7TopGenesSurvival <- function(
                         genesOrMethSites = genesOrMethSites,
                         statsOrPlots = statsOrPlots,
                         survivalGroupingCutoffs = survivalGroupingCutoffs,
-                        useJenksBreaks = useJenksBreaks,
                         jenksBreaksGroupCount = jenksBreaksGroupCount,
                         coreCount = coreCount
                     )

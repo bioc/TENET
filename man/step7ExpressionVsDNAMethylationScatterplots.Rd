@@ -158,7 +158,7 @@ returnValue <- step7ExpressionVsDNAMethylationScatterplots(
 )
 
 ## This example demonstrates many of the analysis options, creating
-## scatterplots for the top 5 genes/TFs as well as some example RE DNA
+## scatterplots for the top 5 genes and TFs as well as some example RE DNA
 ## methylation sites of interest. As before, gene names will be retrieved
 ## from the rowRanges of the 'expression' SummarizedExperiment object.
 ## Complex scatterplots are created which display each sample's CNV and SM

@@ -272,9 +272,14 @@ step4SelectMostSignificantLinksPerDNAMethylationSite <- function(
 
     ## Validate the multiple testing parameters or the
     ## linksPerREDNAMethylationSiteMaximum value
-    if (multipleTestingCorrectionMethod %in%
-        setdiff(stats::p.adjust.methods, "none")
-    ) {
+
+    ## p.adjust supports "none" to not perform any adjustment; we use NA
+    if (!is.na(multipleTestingCorrectionMethod) &&
+        multipleTestingCorrectionMethod == "none") {
+        multipleTestingCorrectionMethod <- NA
+    }
+
+    if (!is.na(multipleTestingCorrectionMethod)) {
         ## multipleTestingPValue must be greater than 0 and less than 1, as
         ## it is a p-value
         if (multipleTestingPValue <= 0 || multipleTestingPValue >= 1) {

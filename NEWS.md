@@ -11,8 +11,6 @@
 
 * External genomic region files can now be provided as a list of multiple files and/or directories containing them, not just a directory
 
-* In step7TopGenesSurvival, remove parentheses from the names of several output variables, which complicated their use in some situations, and remove underscores from the plot legend labels
-
 * Fix TENETSavedSizePlot bug that caused warnings and failure to respect an explicitly specified size
 
 * Fix TENETCacheAllData to fail if any dataset does not exist on the hub

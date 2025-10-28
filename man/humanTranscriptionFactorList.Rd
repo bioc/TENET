@@ -14,8 +14,8 @@ A character vector containing 1,639 Ensembl IDs of known human TFs.
 data("humanTranscriptionFactorList", package = "TENET")
 }
 \description{
-A character vector of gene Ensembl IDs which were identified as
-human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
+A character vector of the Ensembl IDs of genes identified
+as human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
 manually examined by a panel of experts based on available data. Proteins
 with experimentally demonstrated DNA binding specificity were considered TFs.
 Other proteins, such as co-factors and RNA binding proteins, were classified

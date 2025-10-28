@@ -36,10 +36,11 @@ genes and TF genes linked to a given number of RE DNA methylation sites in
 each of the selected analysis quadrants.
 }
 \description{
-This function generates histograms displaying the number of total genes
-and transcription factor (TF) genes with links to a given number of
-regulatory element DNA methylation sites from the hyper- and/or
-hypomethylated G+ analysis quadrants.
+This function generates histograms displaying the number of total genes and
+transcription factor genes linked to a given number of RE DNA methylation
+sites. These are designed to highlight the top overall genes and TF genes,
+which likely have a disproportionately large number of linked RE DNA
+methylation sites compared to most genes.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

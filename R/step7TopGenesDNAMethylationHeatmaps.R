@@ -163,7 +163,7 @@
 #' expression of those genes in the column headers, in the case samples within
 #' the supplied MultiAssayExperiment object
 #'
-# #' This function takes the top genes and transcription factors (TFs) for each
+#' This function takes the top genes and transcription factors (TFs) for each
 #' analysis type by number of linked RE DNA methylation sites identified by the
 #' `step6DNAMethylationSitesPerGeneTabulation` function, up to the number
 #' specified by the user, and generates heatmaps displaying the methylation
@@ -205,7 +205,10 @@
 #' lists, as selected by the user, which contain heatmaps for the top overall
 #' genes and the top TF genes. These heatmaps show the expression of the top
 #' genes/TFs in the column headers and the methylation of their unique linked
-#' RE DNA methylation sites in the body.
+#' RE DNA methylation sites in the body. Column dendrograms are included to
+#' identify subsets of the case samples which display particular expression or
+#' methylation patterns in the top genes and their linked RE DNA methylation
+#' sites.
 #' @export
 #'
 #' @examplesIf interactive()

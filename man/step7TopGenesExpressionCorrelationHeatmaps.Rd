@@ -56,8 +56,14 @@ containing the names and correlation values for each gene.
 This function takes the top genes and TFs for each analysis type by number of
 linked RE DNA methylation sites identified by the
 \code{step6DNAMethylationSitesPerGeneTabulation} function, up to the number
-specified by the user, and generates heatmaps and tables showing the
-correlation R-values between the expression of the top genes/TFs.
+specified by the user, and generates heatmaps displaying the correlation of
+the expression of each of the top genes and TFs in the case samples. Each of
+the genes is displayed in both the rows and columns, so the heatmaps are
+mirrored, with correlation values of each gene to itself displayed in a
+diagonal line in the center of the heatmaps. Red values represent positive
+correlation and blue values represent negative correlation, with darker
+colors representing a stronger correlation. Dendrograms are included to
+identify genes which are closely related in expression correlation.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

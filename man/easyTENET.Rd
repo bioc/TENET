@@ -120,17 +120,16 @@ Returns the created MultiAssayExperiment object containing data from
 all step 1 through 6 functions.
 }
 \description{
-This function combines the step 1 through step 6 functions
-(\code{step1MakeExternalDatasets}, \code{step2GetDifferentiallyMethylatedSites},
-\code{step3GetAnalysisZScores},
+This function runs the main six TENET functions (\code{step1MakeExternalDatasets},
+\code{step2GetDifferentiallyMethylatedSites}, \code{step3GetAnalysisZScores},
 \code{step4SelectMostSignificantLinksPerDNAMethylationSite}, \code{step5OptimizeLinks},
-and \code{step6DNAMethylationSitesPerGeneTabulation}) into a single function.
-Arguments for this function generally reflect the arguments of the component
-functions without clearly defined defaults, with the exception of the
-\code{step1MakeExternalDatasets} function where all arguments have been included
-to support all of the options available to the user to define regions with
-relevant regulatory elements. All remaining arguments of the component
-functions are set to their default values.
+and \code{step6DNAMethylationSitesPerGeneTabulation}) in sequence on the specified
+TENETMultiAssayExperiment object. Arguments for this function generally
+reflect the arguments of the component functions without clearly defined
+defaults, with the exception of the \code{step1MakeExternalDatasets} function
+where all arguments have been included to support all available options to
+define regions with relevant regulatory elements. All remaining arguments of
+the component functions are set to their default values.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

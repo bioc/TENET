@@ -72,7 +72,7 @@ guess; Lambert et al did not provide a description for this field.
 data("humanTranscriptionFactorDb", package = "TENET")
 }
 \description{
-A data frame with information on TFs which were identified as
+A data frame with information on genes identified as
 human TFs by Lambert SA et al (PMID: 29425488). Candidate proteins were
 manually examined by a panel of experts based on available data. Proteins
 with experimentally demonstrated DNA binding specificity were considered TFs.
